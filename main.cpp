@@ -1,3 +1,4 @@
+#include "Instruction.h"
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -12,7 +13,11 @@ void readFile(string path)
 	{
 		while ( getline (myfile,line) )
 		{
-			cout << line << endl;
+			Instruction *p=Instruction::parseLine(line);
+			if(p!=NULL)
+			{
+				(*p).print();
+			}
 		}
 		myfile.close();
 	}

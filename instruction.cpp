@@ -42,7 +42,7 @@ Instruction::Instruction(string opcode,int source1,int source2, int target)
 
 Instruction::~Instruction()
 {
-	
+
 }
 
 int Instruction::getSource1()
@@ -94,11 +94,11 @@ Instruction* Instruction::parseLine(string line)
 		{
 			if(tokens.size()==5)
 			{
-			int source1=getRegisterNumber(tokens.at(1));
-			int source2=getRegisterNumber(tokens.at(2));
-			int target=getRegisterNumber(tokens.at(4));
-			Instruction *p=new Instruction (temp,source1,source2,target);
-			return p;
+				int source1=getRegisterNumber(tokens.at(1));
+				int source2=getRegisterNumber(tokens.at(2));
+				int target=getRegisterNumber(tokens.at(4));
+				Instruction *p=new Instruction (temp,source1,source2,target);
+				return p;
 			}
 			else if(tokens.size()==4)
 			{
@@ -109,7 +109,7 @@ Instruction* Instruction::parseLine(string line)
 				string temp2=temp.substr(pos+1,temp.length()-(pos+1));
 				int source2=getRegisterNumber(temp2);
 				int target=getRegisterNumber(tokens.at(3));
-				Instruction *p=new Instruction (temp,source1,source2,target);
+				Instruction *p=new Instruction (tokens.at(0),source1,source2,target);
 				return p;
 			}
 			else
@@ -140,13 +140,29 @@ Instruction* Instruction::parseLine(string line)
 	else
 	{
 		cout<<"This line is empty\n";
-			return NULL;
+		return NULL;
 	}
 }
 
 int Instruction::getRegisterNumber(string s)
 {
-	s=s.substr(1,s.length()-1);
-	return stoi(s);
+	if(s.substr(0,1).compare("r")==0)
+	{
+		if(s.substr(s.length()-1,1).compare(",")==0)
+		{
+			s=s.substr(1,s.length()-2);
+		}
+		else
+		{
+			s=s.substr(1,s.length()-1);
+		}
+
+		return stoi(s);
+	}
+	else
+	{
+		cout<<"Invalid register name\n";
+	}
+	return -1;
 }
 

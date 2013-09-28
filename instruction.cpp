@@ -7,9 +7,9 @@
 void Instruction::init()
 {
 	this->immediateValue=-1;
-	initRegister(this->source1);
-	initRegister(this->source2);
-	initRegister(this->target);
+	initRegister(source1);
+	initRegister(source2);
+	initRegister(target);
 }
 
 void Instruction::initRegister(Register &r)
@@ -18,8 +18,13 @@ void Instruction::initRegister(Register &r)
 	r.pr=-1;
 	r.define=-1;
 	r.lastUse=-1;
-	int n=0;
-	r.count=&n;
+	r.count=new int;
+	*(r.count)=0;
+}
+
+void Instruction::deleteRegister(Register &r)
+{
+	delete r.count;
 }
 
 Instruction::Instruction(string opcode,long immediateValue)
@@ -56,7 +61,9 @@ Instruction::Instruction(string opcode,int source1,int source2, int target)
 
 Instruction::~Instruction()
 {
-
+	deleteRegister(this->source1);
+	deleteRegister(this->source2);
+	deleteRegister(this->target);
 }
 
 Register Instruction::getSource1()
@@ -78,7 +85,7 @@ string toString(Register r)
 {
 	//sprintf
 	stringstream ss;
-	ss<<"(vr:"<<r.vr<<" pr:"<<r.pr<<" define:"<<r.define<<" use:"<<r.lastUse<<")";
+	ss<<"(vr:"<<r.vr<<" pr:"<<r.pr<<" define:"<<r.define<<" use:"<<r.lastUse<<" count:"<<*(r.count)<<")";
 	return ss.str();
 }
 

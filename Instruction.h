@@ -27,6 +27,7 @@ public:
 	Instruction(string, int, long);
 	Instruction(string, int, int, int);
 	~Instruction();
+	void deleteRegister(Register &r);
 
 	Register getSource1();
 	Register getSource2();

@@ -4,40 +4,54 @@
 #include <iostream>
 #include <iterator>
 
+void Instruction::init()
+{
+	this->immediateValue=-1;
+	initRegister(this->source1);
+	initRegister(this->source2);
+	initRegister(this->target);
+}
+
+void Instruction::initRegister(Register &r)
+{
+	r.vr=-1;
+	r.pr=-1;
+	r.define=-1;
+	r.lastUse=-1;
+	int n=0;
+	r.count=&n;
+}
+
 Instruction::Instruction(string opcode,long immediateValue)
 {
+	init();
 	this->opcode=opcode;
 	this->immediateValue=immediateValue;
-	this->source1=-1;
-	this->source2=-1;
-	this->target=-1;
 }
 
 Instruction::Instruction(string opcode,int source1, int target)
 {
+	init();
 	this->opcode=opcode;
-	this->source1=source1;
-	this->target=target;
-	this->source2=-1;
-	this->immediateValue=-1;
+	this->source1.vr=source1;
+	this->target.vr=target;
 }
 
 Instruction::Instruction(string opcode, int target,long immediateValue)
 {
+	init();
 	this->opcode=opcode;
-	this->target=target;
+	this->target.vr=target;
 	this->immediateValue=immediateValue;
-	this->source1=-1;
-	this->source2=-1;
 }
 
 Instruction::Instruction(string opcode,int source1,int source2, int target)
 {
+	init();
 	this->opcode=opcode;
-	this->source1=source1;
-	this->source2=source2;
-	this->target=target;
-	this->immediateValue=-1;
+	this->source1.vr=source1;
+	this->source2.vr=source2;
+	this->target.vr=target;
 }
 
 Instruction::~Instruction()
@@ -45,25 +59,33 @@ Instruction::~Instruction()
 
 }
 
-int Instruction::getSource1()
+Register Instruction::getSource1()
 {
 	return source1;
 }
 
-int Instruction::getSource2()
+Register Instruction::getSource2()
 {
 	return source2;
 }
 
-int Instruction::getTarget()
+Register Instruction::getTarget()
 {
 	return target;
 }
 
+string toString(Register r)
+{
+	//sprintf
+	stringstream ss;
+	ss<<"(vr:"<<r.vr<<" pr:"<<r.pr<<" define:"<<r.define<<" use:"<<r.lastUse<<")";
+	return ss.str();
+}
+
 void Instruction::print()
 {
-	cout<<"Opcode="<<opcode<<" Source1="<<source1<<" Source2="<<source2
-		<<" ImmediateValue="<<immediateValue<<" Target="<<target<<"\n";
+	cout<<"Opcode="<<opcode<<" \nSource1="<<toString(source1)<<" \nSource2="<<toString(source2)
+		<<" \nImmediateValue="<<immediateValue<<" \nTarget="<<toString(target)<<"\n\n";
 }
 
 Instruction* Instruction::parseLine(string line)
@@ -120,7 +142,7 @@ Instruction* Instruction::parseLine(string line)
 		else if((temp.compare("loadI")==0))
 		{
 			int target=getRegisterNumber(tokens.at(3));
-			long immediate=stoi(tokens.at(1));
+			long immediate=stoi(tokens.at(1));//should accept character
 			Instruction *p=new Instruction (temp,target,immediate);
 			return p;
 		}

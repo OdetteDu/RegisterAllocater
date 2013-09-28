@@ -4,27 +4,40 @@
 #include <string>
 using namespace std;
 
+struct Register
+{
+	int pr;
+	int vr;
+	int lastUse;
+	int define;
+	int *count;
+};
+
 class Instruction
 {
 	string opcode;
-	int source1,source2,target;
+	Register source1,source2,target;
 	long immediateValue;
 
 public:
+	void init();
+	void initRegister(Register &r);
 	Instruction(string, long);
 	Instruction(string, int, int);
 	Instruction(string, int, long);
 	Instruction(string, int, int, int);
 	~Instruction();
 
-	int getSource1();
-	int getSource2();
-	int getTarget();
+	Register getSource1();
+	Register getSource2();
+	Register getTarget();
 	void print();
 
 	static Instruction* parseLine(string line);
 	static int getRegisterNumber(string s);
 };
+
+
 
 
 

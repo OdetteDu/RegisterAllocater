@@ -2,11 +2,14 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <vector>
 
 using namespace std;
 
-void readFile(string path)
+vector<Instruction> readFile(string path)
 {
+	vector<Instruction> instructions;
+	//instructions.reserve(2);
 	string line;
 	ifstream myfile (path);
 	if (myfile.is_open())
@@ -16,13 +19,16 @@ void readFile(string path)
 			Instruction *p=Instruction::parseLine(line);
 			if(p!=NULL)
 			{
-				(*p).print();
+				instructions.push_back(*p);
+				//(*p).print();
 			}
 		}
 		myfile.close();
 	}
 
 	else cout << "Unable to open file"; 
+
+	return instructions;
 }
 
 int main (int argc, const char* argv[])
@@ -47,7 +53,11 @@ int main (int argc, const char* argv[])
 
 	string path=argv[3];
 	cout<<path<<"\n";
-	readFile(path);
+	vector<Instruction> instructions=readFile(path);
+	for(int i=0;i<instructions.size();i++)
+	{
+		instructions.at(i).print();
+	}
 
 	while(1)
 	{

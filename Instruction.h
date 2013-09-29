@@ -32,6 +32,7 @@ public:
 	Register getSource1();
 	Register getSource2();
 	Register getTarget();
+
 	void print();
 
 	static Instruction* parseLine(string line);

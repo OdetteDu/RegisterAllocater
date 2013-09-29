@@ -6,15 +6,20 @@ import exception.UseUndefinedRegisterException;
 
 public abstract class AAllocator {
 
-	protected int numPhysicalRegister;
+	protected int[] prs;
 	protected ArrayList<Instruction> instructions;
 	private int count;
 
 	public AAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions) 
 	{
-		this.numPhysicalRegister=numPhysicalRegister;
 		count=-2;
 		this.instructions=instructions;
+		
+		prs=new int [numPhysicalRegister];
+		for(int i=0;i<prs.length;i++)
+		{
+			prs[i]=-1;
+		}
 		
 	}
 	

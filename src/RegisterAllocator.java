@@ -65,6 +65,7 @@ public class RegisterAllocator {
 		}
 		
 		allocator.run();
+		System.out.println(allocator);
 	}
 	
 	public void run()

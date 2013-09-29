@@ -1,9 +1,18 @@
-loadI 1028 => r1
-load r1 => r2
-mult r1,r2 => r3
-loadI 0 => r4
-sub r4,r2 => r5
-loadI 0 => r6
-mult r5,r6 => r7
-sub r7,r3 => r8
-store r8 => r1
+// Comp 412 Lab #1 - block2.i
+//
+// a simplified linear algebra kernel
+//
+// Example usage: sim < block2.i
+
+	
+	loadI 	5	=> r50
+	loadI 	1032	=> r49
+	store 	r50	=> r49
+	loadI 	2048	=> r49
+	store 	r50	=> r49
+	loadI 	6	=> r50
+	loadI 	4104	=> r49
+	store 	r50	=> r49
+	loadI 	1	=> r50
+	loadI 	8192	=> r49
+	store 	r50	=> r49

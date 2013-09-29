@@ -1,0 +1,12 @@
+package exception;
+
+public class UseUndefinedRegisterException extends Exception{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	
+
+}

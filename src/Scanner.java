@@ -12,8 +12,12 @@ public class Scanner {
 			char c=line.charAt(i);
 			if(c==' ' || c=='\t'|| c==',')
 			{
-				tokens.add(temp);
-				temp="";
+				if(temp.length()!=0)
+				{
+					tokens.add(temp);
+					temp="";
+				}
+				
 			}
 			else if(c=='/' && line.charAt(i+1)=='/')
 			{
@@ -33,7 +37,12 @@ public class Scanner {
 				temp+=c;
 			}
 		}
-		tokens.add(temp);
+		
+		if(temp.length()!=0)
+		{
+			tokens.add(temp);
+		}
+		
 		return tokens;
 	}
 }

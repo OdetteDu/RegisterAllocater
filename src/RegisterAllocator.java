@@ -9,6 +9,7 @@ import exception.ExtraTokenException;
 import exception.InvalidArrowException;
 import exception.InvalidOpcodeException;
 import exception.InvalidRegisterNameException;
+import exception.UseUndefinedRegisterException;
 
 
 public class RegisterAllocator {
@@ -52,6 +53,21 @@ public class RegisterAllocator {
 		return s;
 	}
 	
+	public void allocate() throws UseUndefinedRegisterException
+	{
+		AAllocator allocator;
+		if(useTopDown)
+		{
+			allocator=new TopDownAllocator(instructions);
+		}
+		else
+		{
+			allocator=new ButtomUpAllocator(instructions);
+		}
+		
+		allocator.run();
+	}
+	
 	public void run()
 	{
 		try
@@ -66,8 +82,12 @@ public class RegisterAllocator {
 				while(temp!=null)
 				{
 					ArrayList<String> tokens=scanner.scanLine(temp);
-					Instruction instruction=parser.parseLine(tokens);
-					instructions.add(instruction);
+					if(!tokens.isEmpty())
+					{
+						Instruction instruction=parser.parseLine(tokens);
+						instructions.add(instruction);
+					}
+					
 					temp=br.readLine();
 				}
 				
@@ -94,7 +114,7 @@ public class RegisterAllocator {
 		}
 	}
 
-	public static void main(String args[])
+	public static void main(String args[]) throws UseUndefinedRegisterException
 	{
 		String mode=args[0];
 		boolean useTopDown=false;
@@ -118,6 +138,7 @@ public class RegisterAllocator {
 		
 		RegisterAllocator ra=new RegisterAllocator(useTopDown, numRegisters,filePath);
 		ra.run();
+		ra.allocate();
 		System.out.println(ra);
 	}
 	

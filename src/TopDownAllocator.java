@@ -3,9 +3,9 @@ import java.util.ArrayList;
 
 public class TopDownAllocator extends AAllocator {
 
-	public TopDownAllocator(ArrayList<Instruction> instructions)
+	public TopDownAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions)
 	{
-		super(instructions);
+		super(numPhysicalRegister,instructions);
 	}
 
 	@Override

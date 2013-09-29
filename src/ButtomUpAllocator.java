@@ -3,15 +3,33 @@ import java.util.ArrayList;
 
 public class ButtomUpAllocator extends AAllocator {
 	
-	public ButtomUpAllocator(ArrayList<Instruction> instructions)
+	public ButtomUpAllocator(int numPhysicalRegister,ArrayList<Instruction> instructions)
 	{
-		super(instructions);
+		super(numPhysicalRegister,instructions);
 	}
 
 	@Override
 	public void allocateRegister() {
-		// TODO Auto-generated method stub
 		
+		for(int i=0;i<instructions.size();i++)
+		{
+			
+		}
+		
+	}
+	
+	public int ensure(Instruction instruction)
+	{
+		//if instruction is in controll
+		//return its physical register
+		//else
+		//allocate
+		return 0;
+	}
+	
+	public int allocate()
+	{
+		return 0;
 	}
 
 }

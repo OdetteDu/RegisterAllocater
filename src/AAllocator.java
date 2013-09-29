@@ -6,11 +6,13 @@ import exception.UseUndefinedRegisterException;
 
 public abstract class AAllocator {
 
+	protected int numPhysicalRegister;
 	protected ArrayList<Instruction> instructions;
 	private int count;
 
-	public AAllocator(ArrayList<Instruction> instructions) 
+	public AAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions) 
 	{
+		this.numPhysicalRegister=numPhysicalRegister;
 		count=-2;
 		this.instructions=instructions;
 		
@@ -19,6 +21,7 @@ public abstract class AAllocator {
 	public void run() throws UseUndefinedRegisterException
 	{
 		calculateLiveRange();
+		allocateRegister();
 	}
 	
 	private void rename(Register r, HashMap<Integer, Integer> renameList)
@@ -36,6 +39,7 @@ public abstract class AAllocator {
 		HashMap<Integer, Integer> liveRegisters=new HashMap<Integer,Integer>();
 		ArrayList<Integer> definedVr=new ArrayList<Integer>();
 		HashMap<Integer, Integer> renameList=new HashMap<Integer,Integer>();
+		HashMap<Integer, Integer> registerUse=new HashMap<Integer, Integer>();
 
 		int i=instructions.size()-1;
 		while(i>=0)
@@ -57,6 +61,8 @@ public abstract class AAllocator {
 				{
 					int lastUse=liveRegisters.get(source1.getVr());
 					source1.setLastUse(lastUse);
+					source1.setNextUse(registerUse.get(source1.getVr()));
+					registerUse.put(source1.getVr(), i);
 				}
 				else
 				{
@@ -68,6 +74,8 @@ public abstract class AAllocator {
 					}
 					source1.setLastUse(i);
 					liveRegisters.put(source1.getVr(), i);
+					source1.setNextUse(i);
+					registerUse.put(source1.getVr(), i);
 				}
 			}
 
@@ -86,6 +94,8 @@ public abstract class AAllocator {
 				{
 					int lastUse=liveRegisters.get(source2.getVr());
 					source2.setLastUse(lastUse);
+					source2.setNextUse(registerUse.get(source2.getVr()));
+					registerUse.put(source2.getVr(), i);
 				}
 				else
 				{
@@ -97,6 +107,8 @@ public abstract class AAllocator {
 					}
 					source2.setLastUse(i);
 					liveRegisters.put(source2.getVr(), i);
+					source2.setNextUse(i);
+					registerUse.put(source2.getVr(), i);
 				}
 				
 			}
@@ -117,6 +129,9 @@ public abstract class AAllocator {
 					int lastUse=liveRegisters.get(target.getVr());
 					target.setLastUse(lastUse);
 					liveRegisters.remove(target.getVr());
+					target.setNextUse(registerUse.get(target.getVr()));
+					registerUse.remove(target.getVr());
+					
 				}
 				else
 				{
@@ -127,6 +142,7 @@ public abstract class AAllocator {
 						target.setVr(availableName);
 					}
 					target.setLastUse(-1);
+					target.setNextUse(-1);
 				}
 				
 				definedVr.add(target.getVr());

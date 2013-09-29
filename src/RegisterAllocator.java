@@ -1,5 +1,4 @@
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -58,11 +57,11 @@ public class RegisterAllocator {
 		AAllocator allocator;
 		if(useTopDown)
 		{
-			allocator=new TopDownAllocator(instructions);
+			allocator=new TopDownAllocator(numRegister,instructions);
 		}
 		else
 		{
-			allocator=new ButtomUpAllocator(instructions);
+			allocator=new ButtomUpAllocator(numRegister,instructions);
 		}
 		
 		allocator.run();

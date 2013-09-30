@@ -1,6 +1,10 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 
+
+
+import java.util.Iterator;
+
 import exception.UseUndefinedRegisterException;
 
 
@@ -8,12 +12,14 @@ public abstract class AAllocator {
 
 	protected int[] prs;
 	protected ArrayList<Instruction> instructions;
-	private int count;
+	private int renameCount;
+	protected HashMap<Integer, Integer> useFrequency; // vr:count
 
 	public AAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions) 
 	{
-		count=-2;
+		renameCount=-2;
 		this.instructions=instructions;
+		useFrequency=new HashMap<Integer, Integer>();
 		
 		prs=new int [numPhysicalRegister];
 		for(int i=0;i<prs.length;i++)
@@ -68,6 +74,9 @@ public abstract class AAllocator {
 					source1.setLastUse(lastUse);
 					source1.setNextUse(registerUse.get(source1.getVr()));
 					registerUse.put(source1.getVr(), i);
+					int x=useFrequency.get(source1.getVr());
+					x++;
+					useFrequency.put(source1.getVr(), x);
 				}
 				else
 				{
@@ -81,6 +90,7 @@ public abstract class AAllocator {
 					liveRegisters.put(source1.getVr(), i);
 					source1.setNextUse(i);
 					registerUse.put(source1.getVr(), i);
+					useFrequency.put(source1.getVr(), 1);
 				}
 			}
 
@@ -101,6 +111,9 @@ public abstract class AAllocator {
 					source2.setLastUse(lastUse);
 					source2.setNextUse(registerUse.get(source2.getVr()));
 					registerUse.put(source2.getVr(), i);
+					int x=useFrequency.get(source2.getVr());
+					x++;
+					useFrequency.put(source2.getVr(), x);
 				}
 				else
 				{
@@ -114,6 +127,7 @@ public abstract class AAllocator {
 					liveRegisters.put(source2.getVr(), i);
 					source2.setNextUse(i);
 					registerUse.put(source2.getVr(), i);
+					useFrequency.put(source2.getVr(), 1);
 				}
 				
 			}
@@ -170,12 +184,20 @@ public abstract class AAllocator {
 		{
 			s+=instructions.get(i)+"\n";
 		}
+		
+		Iterator<Integer> iter=useFrequency.keySet().iterator();
+		while(iter.hasNext())
+		{
+			int x=iter.next();
+			s+="v"+x+": "+useFrequency.get(x)+"\n";
+		}
+		
 		return s;
 	}
 	
 	private int getAvailableName()
 	{
-		return count--;
+		return renameCount--;
 	}
 	
 	public abstract void allocateRegister();

@@ -3,6 +3,8 @@ import java.util.ArrayList;
 
 public class PhysicalRegisters {
 	
+	public static final int IMMEDIATE_VALUE_MARK=0;
+	
 	private ArrayList<Integer> freeRegisters; //Of physical register
 	private int[] phsicalRegisters;
 	private int numReservedRegisters;
@@ -25,7 +27,7 @@ public class PhysicalRegisters {
 	
 	public String toString()
 	{
-		String s="Physical Registers status: \n";
+		String s="   ";
 		for(int i=0;i<phsicalRegisters.length;i++)
 		{
 			s+="p"+i+":v"+phsicalRegisters[i]+" ";
@@ -55,11 +57,16 @@ public class PhysicalRegisters {
 		}
 	}
 	
-	public int getRegister(int virtualRegisterNumber) throws NoFreeRegisterException
+	public int getReservedRegister() throws NoFreeRegisterException
+	{
+		return getRegister(PhysicalRegisters.IMMEDIATE_VALUE_MARK);
+	}
+	
+	private int getRegister(int virtualRegisterNumber) throws NoFreeRegisterException
 	{
 		if(!freeRegisters.isEmpty())
 		{
-			int result=freeRegisters.remove(0);
+			int result=freeRegisters.remove(freeRegisters.size()-1);
 			phsicalRegisters[result]=virtualRegisterNumber;
 			return result;
 		}

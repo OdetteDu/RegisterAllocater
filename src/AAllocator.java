@@ -14,19 +14,19 @@ public abstract class AAllocator {
 
 	protected HashMap<Integer, Register> allocatedRegisters; //virtual register: register(physical)
 	protected PhysicalRegisters physicalRegisters;
-	
+
 	private int spillCount;
 	private HashMap<Integer, Integer> spillMap; //virtual register: memory location
-	
+
 	protected HashMap<Integer, Integer> useFrequencyCount; // vr:count
-	
+
 	public AAllocator(int numPhysicalRegisters, ArrayList<Instruction> instructions) throws UseUndefinedRegisterException 
 	{
 		renameCount=-2;
-		
+
 		useFrequencyCount=new HashMap<Integer, Integer>();
-		
-		
+
+
 		this.instructions=instructions;
 
 		int maxLive=calculateLiveRange();
@@ -35,7 +35,7 @@ public abstract class AAllocator {
 		spillMap=new HashMap<Integer, Integer>();
 		allocatedRegisters=new HashMap<Integer, Register>();
 		newInstructions=new ArrayList<String>();
-		
+
 		int numReserveRegisters;
 		if(maxLive<=numPhysicalRegisters)
 		{
@@ -47,7 +47,7 @@ public abstract class AAllocator {
 			//reserve
 			numReserveRegisters=2;
 		}
-		
+
 		physicalRegisters=new PhysicalRegisters(numPhysicalRegisters, numReserveRegisters);
 	}
 
@@ -197,26 +197,26 @@ public abstract class AAllocator {
 		{
 			throw new UseUndefinedRegisterException();
 		}
-		
+
 		return maxLive;
 	}
 
 	public String toString()
 	{
 		String s="Output: \n";
-		
+
 		for(int i=0;i<instructions.size();i++)
 		{
 			s+=instructions.get(i);
 		}
-		
+
 		s+="\n";
-		
+
 		for (int i=0;i<newInstructions.size();i++)
 		{
 			s+=newInstructions.get(i)+"\n";
 		}
-		
+
 		s+="\n";
 
 		Iterator<Integer> iter=useFrequencyCount.keySet().iterator();
@@ -231,8 +231,12 @@ public abstract class AAllocator {
 
 	public void allocateRegister() throws NoFreeRegisterException {
 
+
+
 		for(int i=0;i<instructions.size();i++)
 		{
+			ArrayList<Register> toBeFreeList=new ArrayList<Register>();
+
 			Instruction in=instructions.get(i);
 
 			if(in.getOpcode().equals("loadI"))
@@ -252,7 +256,8 @@ public abstract class AAllocator {
 
 				if(in.getSource1().getLastUse()<=i)
 				{
-					unAllocate(in.getSource1());
+					//unAllocate(in.getSource1());
+					toBeFreeList.add(in.getSource1());
 				}
 
 			}
@@ -264,8 +269,14 @@ public abstract class AAllocator {
 
 				if(in.getSource2().getLastUse()<=i)
 				{
-					unAllocate(in.getSource2());
+					//unAllocate(in.getSource2());
+					toBeFreeList.add(in.getSource1());
 				}
+			}
+			
+			for(int j=0;j<toBeFreeList.size();j++)//TODO improve performance
+			{
+				unAllocate(toBeFreeList.remove(i));
 			}
 
 			if(in.getTarget()!=null)
@@ -284,7 +295,9 @@ public abstract class AAllocator {
 
 			String newInstruction=getNewInstruction(in);
 			newInstructions.add(newInstruction);
-			//System.out.println(newInstruction+" "+getPhysicalRegisterStatus());
+			System.out.println(newInstruction+" "+physicalRegisters);
+
+			
 		}
 
 	}
@@ -342,7 +355,7 @@ public abstract class AAllocator {
 		}
 		else//else get from spilled
 		{
-			result=unSpill(unAllocatedRegister,physicalRegisters.getRegister(unAllocatedRegister.getVr()),allocate(unAllocatedRegister));
+			result=unSpill(unAllocatedRegister);
 		}
 
 		return result;
@@ -357,8 +370,10 @@ public abstract class AAllocator {
 		//register.setPr(-1);
 	}
 
-	protected void spill(Register registerToBeSpill, int tempPhysicalRegister)
+	protected void spill(Register registerToBeSpill) throws NoFreeRegisterException
 	{
+		int tempPhysicalRegister=physicalRegisters.getReservedRegister();
+
 		int spillLocation=getSpillMemoryLocation();
 		spillMap.put(registerToBeSpill.getVr(), spillLocation);
 
@@ -367,18 +382,19 @@ public abstract class AAllocator {
 		String s2="store p"+registerToBeSpill.getPr()+ " => p"+tempPhysicalRegister;//load registerToBeSpill => pr
 		newInstructions.add(s2);
 
+		physicalRegisters.returnFreeRegister(tempPhysicalRegister);
+		unAllocate(registerToBeSpill);
 		allocatedRegisters.remove(new Integer(registerToBeSpill.getVr()));
 
-		physicalRegisters.returnFreeRegister(tempPhysicalRegister);
-		//returnFreeRegister(registerToBeSpill.getPr());
-		unAllocate(registerToBeSpill);
-
-		//		System.out.println(s1);
-		//		System.out.println(s2);
+		System.out.println(s1);
+		System.out.println(s2);
 	}
 
-	protected int unSpill(Register registerToUnSpill, int tempPhysicalRegister, int prDestination)
+	protected int unSpill(Register registerToUnSpill) throws NoFreeRegisterException
 	{
+		int tempPhysicalRegister=physicalRegisters.getReservedRegister();
+		int prDestination=allocate(registerToUnSpill);
+
 		int spillLocation=spillMap.get(registerToUnSpill.getVr());
 
 		String s1="loadI "+spillLocation+ " => p"+tempPhysicalRegister;
@@ -386,12 +402,12 @@ public abstract class AAllocator {
 		String s2="load p"+tempPhysicalRegister+ " => p"+prDestination;
 		newInstructions.add(s2);
 
-		allocatedRegisters.put(registerToUnSpill.getVr(), registerToUnSpill);
-
 		physicalRegisters.returnFreeRegister(tempPhysicalRegister);
 
-		//		System.out.println(s1);
-		//		System.out.println(s2);
+		allocatedRegisters.put(registerToUnSpill.getVr(), registerToUnSpill);
+
+		System.out.println(s1);
+		System.out.println(s2);
 
 		return prDestination;
 	}

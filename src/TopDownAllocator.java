@@ -33,7 +33,7 @@ public class TopDownAllocator extends AAllocator {
 				
 			}
 			
-			spill(lowestFrequency, physicalRegisters.getRegister(unAllocatedRegister.getVr())); //should not be vr, should be immediate
+			spill(lowestFrequency); //should not be vr, should be immediate
 
 			return allocate(unAllocatedRegister);
 		}

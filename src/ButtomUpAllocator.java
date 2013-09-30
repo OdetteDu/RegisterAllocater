@@ -32,7 +32,7 @@ public class ButtomUpAllocator extends AAllocator {
 				}
 			}
 
-			spill(registerUsedFar, physicalRegisters.getRegister(unAllocatedRegister.getVr())); //should not be vr, should be immediate
+			spill(registerUsedFar); //should not be vr, should be immediate
 
 			return allocate(unAllocatedRegister);
 		}

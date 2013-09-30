@@ -10,6 +10,7 @@ public class ButtomUpAllocator extends AAllocator {
 	private HashMap<Integer, Integer> spillMap;
 	private int spillCount;
 	private ArrayList<String> newInstructions;
+	private HashMap<Integer, Register> assignedVirtualRegister;
 	
 	public ButtomUpAllocator(int numPhysicalRegister,ArrayList<Instruction> instructions)
 	{
@@ -17,6 +18,7 @@ public class ButtomUpAllocator extends AAllocator {
 		numFreeRegister=prs.length;
 		spillCount=0;
 		spillMap=new HashMap<Integer, Integer>();
+		assignedVirtualRegister=new HashMap<Integer, Register>();
 		newInstructions=new ArrayList<String>();
 	}
 
@@ -26,22 +28,43 @@ public class ButtomUpAllocator extends AAllocator {
 		for(int i=0;i<instructions.size();i++)
 		{
 			Instruction in=instructions.get(i);
-			if(in.getTarget()!=null)
-			{
-				int prTarget=allocate(in.getTarget().getVr());
-				in.getTarget().setPr(prTarget);
-			}
 			
 			if(in.getSource1()!=null)
 			{
 				int prSource1=ensure(in.getSource1().getVr());
 				in.getSource1().setPr(prSource1);
+				
+				if(in.getSource1().getLastUse()==i)
+				{
+//					if(assignedVirtualRegister.get(in.getSource1().getVr())!=null)
+//					prs[assignedVirtualRegister.get(in.getSource1().getVr()).getPr()]=-1;
+					prs[in.getSource1().getPr()]=-1;
+					numFreeRegister++;
+					assignedVirtualRegister.remove(in.getSource1().getVr());
+				}
+				
 			}
 			
 			if(in.getSource2()!=null)
 			{
 				int prSource2=ensure(in.getSource2().getVr());
 				in.getSource2().setPr(prSource2);
+				
+				if(in.getSource2().getLastUse()==i)
+				{
+//					if(assignedVirtualRegister.get(in.getSource2().getVr())!=null)
+//						prs[assignedVirtualRegister.get(in.getSource2().getVr()).getPr()]=-1;
+					prs[in.getSource2().getPr()]=-1;
+					numFreeRegister++;
+					assignedVirtualRegister.remove(in.getSource2().getVr());
+				}
+			}
+			
+			if(in.getTarget()!=null)
+			{
+				int prTarget=allocate(in.getTarget().getVr());
+				in.getTarget().setPr(prTarget);
+				assignedVirtualRegister.put(in.getTarget().getVr(),in.getTarget());
 			}
 			
 			String newInstruction=getNewInstruction(in);
@@ -58,6 +81,8 @@ public class ButtomUpAllocator extends AAllocator {
 		if(Instruction.isValidOpcodeWithSource1Source2Target(opcode))
 		{
 			result+=" r"+instruction.getSource1().getPr()+", r"+instruction.getSource2().getPr()+" => r"+instruction.getTarget().getPr();
+			result+="  ";
+			result+=" r"+instruction.getSource1().getVr()+", r"+instruction.getSource2().getVr()+" => r"+instruction.getTarget().getVr();
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithImmediateValue))
 		{
@@ -69,17 +94,23 @@ public class ButtomUpAllocator extends AAllocator {
 		{
 			//loadI
 			result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getPr();
+			result+="  ";
+			result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getVr();
 			
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Source2))
 		{
 			//store
 			result+=" r"+instruction.getSource1().getPr()+" => r"+instruction.getSource2().getPr();
+			result+="     ";
+			result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getSource2().getVr();
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Target))
 		{
 			//load
 			result+=" r"+instruction.getSource1().getPr()+" => r"+instruction.getTarget().getPr();
+			result+="      ";
+			result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getTarget().getVr();
 		}
 		
 		return result;
@@ -98,7 +129,7 @@ public class ButtomUpAllocator extends AAllocator {
 			}
 		}
 		
-		//else
+		//else get from spilled 
 		if(result==-1)
 		{
 			//allocate
@@ -112,7 +143,7 @@ public class ButtomUpAllocator extends AAllocator {
 	{
 		int result=-1;
 		
-		if(numFreeRegister<2)
+		if(numFreeRegister<1)
 		{
 			//spill
 		}

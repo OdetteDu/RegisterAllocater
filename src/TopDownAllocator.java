@@ -2,6 +2,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import exception.UseUndefinedRegisterException;
+
 
 public class TopDownAllocator extends AAllocator {
 	
@@ -11,7 +13,7 @@ public class TopDownAllocator extends AAllocator {
 	private ArrayList<String> newInstructions;
 	private HashMap<Integer, Register> assignedVirtualRegister; //virtual register: register(physical)
 
-	public TopDownAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions)
+	public TopDownAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions) throws UseUndefinedRegisterException
 	{
 		super(numPhysicalRegister,instructions);
 		spillCount=0;

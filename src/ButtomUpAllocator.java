@@ -2,19 +2,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import exception.UseUndefinedRegisterException;
+
 
 public class ButtomUpAllocator extends AAllocator {
-	
+
 	//private int numFreeRegister;
 	private ArrayList<Integer> freeRegister; //Of physical register
 	private HashMap<Integer, Integer> spillMap; //virtual register: memory location
 	private int spillCount;
 	private ArrayList<String> newInstructions;
 	private HashMap<Integer, Register> assignedVirtualRegister; //virtual register: register(physical)
-	
+	private int numReserveRegister;
+
 	//private String[] prStatus;
-	
-	public ButtomUpAllocator(int numPhysicalRegister,ArrayList<Instruction> instructions)
+
+	public ButtomUpAllocator(int numPhysicalRegister,ArrayList<Instruction> instructions) throws UseUndefinedRegisterException
 	{
 		super(numPhysicalRegister,instructions);
 		//numFreeRegister=prs.length;
@@ -28,58 +31,85 @@ public class ButtomUpAllocator extends AAllocator {
 			freeRegister.add(i);
 		}
 		
+		if(maxLive<=prs.length)
+		{
+			//no reserve needed
+			numReserveRegister=0;
+		}
+		else
+		{
+			//reserve
+			numReserveRegister=1;
+		}
+
 		//prStatus=new String[instructions.size()];
 	}
 
 	@Override
 	public void allocateRegister() {
-		
+
 		for(int i=0;i<instructions.size();i++)
 		{
 			Instruction in=instructions.get(i);
 			
+			if(in.getOpcode().equals("loadI"))
+			{
+				Instruction nextInstruction=instructions.get(i+1);
+				if(nextInstruction.getOpcode().equals("load"))
+				{
+					System.out.println("loadI, load pattern recognized");
+					//TODO
+				}
+			}
+
 			if(in.getSource1()!=null)
 			{
 				int prSource1=ensure(in.getSource1());
 				in.getSource1().setPr(prSource1);
-				
-				if(in.getSource1().getLastUse()==i)
+
+				if(in.getSource1().getLastUse()<=i)
 				{
-					prs[in.getSource1().getPr()]=-1;
-					freeRegister.add(new Integer(in.getSource1().getPr()));
+					//					prs[in.getSource1().getPr()]=-1;
+					//					freeRegister.add(new Integer(in.getSource1().getPr()));
+					unAllocateRegister(in.getSource1().getPr());
 					assignedVirtualRegister.remove(in.getSource1().getVr());
+
 				}
-				
+
 			}
-			
+
 			if(in.getSource2()!=null)
 			{
 				int prSource2=ensure(in.getSource2());
 				in.getSource2().setPr(prSource2);
-				
-				if(in.getSource2().getLastUse()==i)
+
+				if(in.getSource2().getLastUse()<=i)
 				{
-					prs[in.getSource2().getPr()]=-1;
-					freeRegister.add(new Integer(in.getSource2().getPr()));
+					//					prs[in.getSource2().getPr()]=-1;
+					//					freeRegister.add(new Integer(in.getSource2().getPr()));
+					unAllocateRegister(in.getSource1().getPr());
 					assignedVirtualRegister.remove(in.getSource2().getVr());
 				}
 			}
-			
+
 			if(in.getTarget()!=null)
 			{
-				int prTarget=allocate(in.getTarget().getVr());
-				in.getTarget().setPr(prTarget);
-				assignedVirtualRegister.put(in.getTarget().getVr(),in.getTarget());
+				if(in.getTarget().getLastUse()>i)
+				{
+					int prTarget=allocate(in.getTarget().getVr());
+					in.getTarget().setPr(prTarget);
+					assignedVirtualRegister.put(in.getTarget().getVr(),in.getTarget());
+				}
 			}
-			
+
 			String newInstruction=getNewInstruction(in);
 			System.out.println(newInstruction+" "+getPhysicalRegisterStatus());
 			newInstructions.add(newInstruction);
 			//prStatus[i]=getPhysicalRegisterStatus();
 		}
-		
+
 	}
-	
+
 	private String getPhysicalRegisterStatus()
 	{
 		String s=" ";
@@ -89,12 +119,12 @@ public class ButtomUpAllocator extends AAllocator {
 		}
 		return s;
 	}
-	
+
 	private String getNewInstruction(Instruction instruction)
 	{
 		String opcode=instruction.getOpcode();
 		String result=opcode;
-		
+
 		if(Instruction.isValidOpcodeWithSource1Source2Target(opcode))
 		{
 			result+=" p"+instruction.getSource1().getPr()+", p"+instruction.getSource2().getPr()+" => p"+instruction.getTarget().getPr();
@@ -105,7 +135,7 @@ public class ButtomUpAllocator extends AAllocator {
 		{
 			//output
 			result+=" "+instruction.getImmediateValue();
-			
+
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithTargetImmediateValue))
 		{
@@ -113,7 +143,7 @@ public class ButtomUpAllocator extends AAllocator {
 			result+=" "+instruction.getImmediateValue()+" => p"+instruction.getTarget().getPr();
 			result+="  ";
 			result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getVr();
-			
+
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Source2))
 		{
@@ -129,10 +159,10 @@ public class ButtomUpAllocator extends AAllocator {
 			result+="      ";
 			result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getTarget().getVr();
 		}
-		
+
 		return result;
 	}
-	
+
 	private int ensure(Register vr)
 	{
 		int result=-1;
@@ -146,22 +176,22 @@ public class ButtomUpAllocator extends AAllocator {
 				assignedVirtualRegister.put(vr.getVr(), vr);
 			}
 		}
-		
+
 		//else get from spilled 
 		if(result==-1)
 		{
 			//allocate
 			result=unSpill(vr,allocate(vr.getVr()),allocate(vr.getVr()));
 		}
-		
+
 		return result;
 	}
-	
+
 	private int allocate(int vr)
 	{
 		int result=-1;
-		
-		if(freeRegister.size()<2)
+
+		if(freeRegister.size()<=numReserveRegister)
 		{
 			Register registerUsedFar=null;
 			int maxLine=0;
@@ -175,28 +205,28 @@ public class ButtomUpAllocator extends AAllocator {
 					registerUsedFar=r;
 				}
 			}
-			
+
 			spill(registerUsedFar, allocateRegister(vr)); //should not be vr, should be immediate
 		}
-		
+
 		result=allocateRegister(vr);
-						
+
 		return result;
 	}
-	
+
 	private int allocateRegister(int vr)
 	{
 		int result=freeRegister.remove(0);
 		prs[result]=vr;
 		return result;
 	}
-	
+
 	private void unAllocateRegister(int pr)
 	{
 		freeRegister.add(pr);
 		prs[pr]=-1;
 	}
-	
+
 	private void spill(Register registerToBeSpill, int pr)
 	{
 		int spillLocation=getSpillMemoryLocation();
@@ -213,7 +243,7 @@ public class ButtomUpAllocator extends AAllocator {
 		unAllocateRegister(registerToBeSpill.getPr());
 		assignedVirtualRegister.remove(new Integer(registerToBeSpill.getVr()));
 	}
-	
+
 	private int unSpill(Register registerToUnSpill, int prTemp, int prDestination)
 	{
 		int spillLocation=spillMap.get(registerToUnSpill.getVr());
@@ -228,7 +258,7 @@ public class ButtomUpAllocator extends AAllocator {
 		unAllocateRegister(prTemp);
 		return prDestination;
 	}
-	
+
 	private int getSpillMemoryLocation()
 	{
 		//TODO if spillCount>1023, reuse spill
@@ -236,7 +266,7 @@ public class ButtomUpAllocator extends AAllocator {
 		spillCount+=4;
 		return result;
 	}
-	
+
 	public String toString()
 	{
 		String s="Output: \n";

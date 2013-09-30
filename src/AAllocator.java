@@ -14,9 +14,11 @@ public abstract class AAllocator {
 	protected ArrayList<Instruction> instructions;
 	private int renameCount;
 	protected HashMap<Integer, Integer> useFrequency; // vr:count
+	protected int maxLive;
 
-	public AAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions) 
+	public AAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions) throws UseUndefinedRegisterException 
 	{
+		maxLive=0;
 		renameCount=-2;
 		this.instructions=instructions;
 		useFrequency=new HashMap<Integer, Integer>();
@@ -27,11 +29,12 @@ public abstract class AAllocator {
 			prs[i]=-1;
 		}
 		
+		calculateLiveRange();
 	}
 	
-	public void run() throws UseUndefinedRegisterException
+	public void run() 
 	{
-		calculateLiveRange();
+		
 		allocateRegister();
 	}
 	
@@ -88,6 +91,10 @@ public abstract class AAllocator {
 					}
 					source1.setLastUse(i);
 					liveRegisters.put(source1.getVr(), i);
+					if(liveRegisters.size()>maxLive)
+					{
+						maxLive=liveRegisters.size();
+					}
 					source1.setNextUse(i);
 					registerUse.put(source1.getVr(), i);
 					useFrequency.put(source1.getVr(), 1);
@@ -125,6 +132,10 @@ public abstract class AAllocator {
 					}
 					source2.setLastUse(i);
 					liveRegisters.put(source2.getVr(), i);
+					if(liveRegisters.size()>maxLive)
+					{
+						maxLive=liveRegisters.size();
+					}
 					source2.setNextUse(i);
 					registerUse.put(source2.getVr(), i);
 					useFrequency.put(source2.getVr(), 1);
@@ -170,6 +181,8 @@ public abstract class AAllocator {
 			
 			i--;
 		}
+		
+		System.out.println("MaxLive is "+maxLive);
 		
 		if(!liveRegisters.isEmpty())
 		{

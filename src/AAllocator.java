@@ -5,39 +5,62 @@ import java.util.HashMap;
 
 import java.util.Iterator;
 
-import exception.UseUndefinedRegisterException;
-
 
 public abstract class AAllocator {
 
-	protected int[] prs;
-	protected ArrayList<Instruction> instructions;
 	private int renameCount;
-	protected HashMap<Integer, Integer> useFrequency; // vr:count
-	protected int maxLive;
+	protected ArrayList<Instruction> instructions;
+	private ArrayList<String> newInstructions;
 
-	public AAllocator(int numPhysicalRegister, ArrayList<Instruction> instructions) throws UseUndefinedRegisterException 
+	protected HashMap<Integer, Register> allocatedRegisters; //virtual register: register(physical)
+	protected PhysicalRegisters physicalRegisters;
+	
+	private int spillCount;
+	private HashMap<Integer, Integer> spillMap; //virtual register: memory location
+	
+	protected HashMap<Integer, Integer> useFrequencyCount; // vr:count
+	
+	public AAllocator(int numPhysicalRegisters, ArrayList<Instruction> instructions) throws UseUndefinedRegisterException 
 	{
-		maxLive=0;
 		renameCount=-2;
-		this.instructions=instructions;
-		useFrequency=new HashMap<Integer, Integer>();
 		
-		prs=new int [numPhysicalRegister];
-		for(int i=0;i<prs.length;i++)
+		useFrequencyCount=new HashMap<Integer, Integer>();
+		
+		
+		this.instructions=instructions;
+
+		int maxLive=calculateLiveRange();
+
+		spillCount=0;
+		spillMap=new HashMap<Integer, Integer>();
+		allocatedRegisters=new HashMap<Integer, Register>();
+		newInstructions=new ArrayList<String>();
+		
+		int numReserveRegisters;
+		if(maxLive<=numPhysicalRegisters)
 		{
-			prs[i]=-1;
+			//no reserve needed
+			numReserveRegisters=0;
+		}
+		else
+		{
+			//reserve
+			numReserveRegisters=2;
 		}
 		
-		calculateLiveRange();
+		physicalRegisters=new PhysicalRegisters(numPhysicalRegisters, numReserveRegisters);
 	}
-	
-	public void run() 
+
+	public void run() throws NoFreeRegisterException 
 	{
-		
 		allocateRegister();
 	}
-	
+
+	private int getAvailableName()
+	{
+		return renameCount--;
+	}
+
 	private void rename(Register r, HashMap<Integer, Integer> renameList)
 	{
 		if(renameList.get(r.getVr())!=null)
@@ -48,8 +71,9 @@ public abstract class AAllocator {
 		}
 	}
 
-	private void calculateLiveRange() throws UseUndefinedRegisterException
+	private int calculateLiveRange() throws UseUndefinedRegisterException
 	{
+		int maxLive=0;
 		HashMap<Integer, Integer> liveRegisters=new HashMap<Integer,Integer>();
 		ArrayList<Integer> definedVr=new ArrayList<Integer>();
 		HashMap<Integer, Integer> renameList=new HashMap<Integer,Integer>();
@@ -65,21 +89,16 @@ public abstract class AAllocator {
 				Register source1=instruction.getSource1();
 
 				rename(source1,renameList);
-//				if(renameList.get(source1.getVr())!=null)
-//				{
-//					int newName=renameList.get(source1.getVr());
-//					source1.setVr(newName);
-//				}
-				
+
 				if(liveRegisters.get(source1.getVr())!=null)
 				{
 					int lastUse=liveRegisters.get(source1.getVr());
 					source1.setLastUse(lastUse);
 					source1.setNextUse(registerUse.get(source1.getVr()));
 					registerUse.put(source1.getVr(), i);
-					int x=useFrequency.get(source1.getVr());
+					int x=useFrequencyCount.get(source1.getVr());
 					x++;
-					useFrequency.put(source1.getVr(), x);
+					useFrequencyCount.put(source1.getVr(), x);
 				}
 				else
 				{
@@ -97,30 +116,25 @@ public abstract class AAllocator {
 					}
 					source1.setNextUse(i);
 					registerUse.put(source1.getVr(), i);
-					useFrequency.put(source1.getVr(), 1);
+					useFrequencyCount.put(source1.getVr(), 1);
 				}
 			}
 
 			if(instruction.getSource2()!=null)
 			{
 				Register source2=instruction.getSource2();
-				
+
 				rename(source2,renameList);
-//				if(renameList.get(source2.getVr())!=null)
-//				{
-//					int newName=renameList.get(source2.getVr());
-//					source2.setVr(newName);
-//				}
-				
+
 				if(liveRegisters.get(source2.getVr())!=null)
 				{
 					int lastUse=liveRegisters.get(source2.getVr());
 					source2.setLastUse(lastUse);
 					source2.setNextUse(registerUse.get(source2.getVr()));
 					registerUse.put(source2.getVr(), i);
-					int x=useFrequency.get(source2.getVr());
+					int x=useFrequencyCount.get(source2.getVr());
 					x++;
-					useFrequency.put(source2.getVr(), x);
+					useFrequencyCount.put(source2.getVr(), x);
 				}
 				else
 				{
@@ -138,22 +152,17 @@ public abstract class AAllocator {
 					}
 					source2.setNextUse(i);
 					registerUse.put(source2.getVr(), i);
-					useFrequency.put(source2.getVr(), 1);
+					useFrequencyCount.put(source2.getVr(), 1);
 				}
-				
+
 			}
 
 			if(instruction.getTarget()!=null)
 			{
 				Register target=instruction.getTarget();
-				
+
 				rename(target,renameList);
-//				if(renameList.get(target.getVr())!=null)
-//				{
-//					int newName=renameList.get(target.getVr());
-//					target.setVr(newName);
-//				}
-				
+
 				if(liveRegisters.get(target.getVr())!=null)
 				{
 					int lastUse=liveRegisters.get(target.getVr());
@@ -161,7 +170,7 @@ public abstract class AAllocator {
 					liveRegisters.remove(target.getVr());
 					target.setNextUse(registerUse.get(target.getVr()));
 					registerUse.remove(target.getVr());
-					
+
 				}
 				else
 				{
@@ -174,44 +183,224 @@ public abstract class AAllocator {
 					target.setLastUse(-1);
 					target.setNextUse(-1);
 				}
-				
+
 				definedVr.add(target.getVr());
 				target.setDefine(i);
 			}
-			
+
 			i--;
 		}
-		
+
 		System.out.println("MaxLive is "+maxLive);
-		
+
 		if(!liveRegisters.isEmpty())
 		{
 			throw new UseUndefinedRegisterException();
 		}
+		
+		return maxLive;
 	}
-	
+
 	public String toString()
 	{
-		String s="";
+		String s="Output: \n";
+		
 		for(int i=0;i<instructions.size();i++)
 		{
-			s+=instructions.get(i)+"\n";
+			s+=instructions.get(i);
 		}
 		
-		Iterator<Integer> iter=useFrequency.keySet().iterator();
+		s+="\n";
+		
+		for (int i=0;i<newInstructions.size();i++)
+		{
+			s+=newInstructions.get(i)+"\n";
+		}
+		
+		s+="\n";
+
+		Iterator<Integer> iter=useFrequencyCount.keySet().iterator();
 		while(iter.hasNext())
 		{
 			int x=iter.next();
-			s+="v"+x+": "+useFrequency.get(x)+"\n";
+			s+="v"+x+": "+useFrequencyCount.get(x)+"\n";
 		}
-		
+
 		return s;
 	}
-	
-	private int getAvailableName()
-	{
-		return renameCount--;
+
+	public void allocateRegister() throws NoFreeRegisterException {
+
+		for(int i=0;i<instructions.size();i++)
+		{
+			Instruction in=instructions.get(i);
+
+			if(in.getOpcode().equals("loadI"))
+			{
+				Instruction nextInstruction=instructions.get(i+1);
+				if(nextInstruction.getOpcode().equals("load"))
+				{
+					System.out.println("loadI, load pattern recognized");
+					//TODO
+				}
+			}
+
+			if(in.getSource1()!=null)
+			{
+				int prSource1=ensure(in.getSource1());
+				in.getSource1().setPr(prSource1);
+
+				if(in.getSource1().getLastUse()<=i)
+				{
+					unAllocate(in.getSource1());
+				}
+
+			}
+
+			if(in.getSource2()!=null)
+			{
+				int prSource2=ensure(in.getSource2());
+				in.getSource2().setPr(prSource2);
+
+				if(in.getSource2().getLastUse()<=i)
+				{
+					unAllocate(in.getSource2());
+				}
+			}
+
+			if(in.getTarget()!=null)
+			{
+				if(in.getTarget().getLastUse()>i)
+				{
+					int prTarget=allocate(in.getTarget());
+					in.getTarget().setPr(prTarget);
+					allocatedRegisters.put(in.getTarget().getVr(),in.getTarget());
+				}
+				else
+				{
+					//TODO check if it is arithmetic operation, if yes, output the line and free register
+				}
+			}
+
+			String newInstruction=getNewInstruction(in);
+			newInstructions.add(newInstruction);
+			//System.out.println(newInstruction+" "+getPhysicalRegisterStatus());
+		}
+
 	}
-	
-	public abstract void allocateRegister();
+
+	private String getNewInstruction(Instruction instruction)
+	{
+		String opcode=instruction.getOpcode();
+		String result=opcode;
+
+		if(Instruction.isValidOpcodeWithSource1Source2Target(opcode))
+		{
+			result+=" p"+instruction.getSource1().getPr()+", p"+instruction.getSource2().getPr()+" => p"+instruction.getTarget().getPr();
+			//result+="  ";
+			//result+=" r"+instruction.getSource1().getVr()+", r"+instruction.getSource2().getVr()+" => r"+instruction.getTarget().getVr();
+		}
+		else if(opcode.equals(Instruction.validOpcodeWithImmediateValue))
+		{
+			//output
+			result+=" "+instruction.getImmediateValue();
+
+		}
+		else if(opcode.equals(Instruction.validOpcodeWithTargetImmediateValue))
+		{
+			//loadI
+			result+=" "+instruction.getImmediateValue()+" => p"+instruction.getTarget().getPr();
+			//result+="  ";
+			//result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getVr();
+
+		}
+		else if(opcode.equals(Instruction.validOpcodeWithSource1Source2))
+		{
+			//store
+			result+=" p"+instruction.getSource1().getPr()+" => p"+instruction.getSource2().getPr();
+			//result+="     ";
+			//result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getSource2().getVr();
+		}
+		else if(opcode.equals(Instruction.validOpcodeWithSource1Target))
+		{
+			//load
+			result+=" p"+instruction.getSource1().getPr()+" => p"+instruction.getTarget().getPr();
+			//result+="      ";
+			//result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getTarget().getVr();
+		}
+
+		return result;
+	}
+
+	private int ensure(Register unAllocatedRegister) throws NoFreeRegisterException
+	{
+		int result;
+
+		if(allocatedRegisters.get(unAllocatedRegister.getVr())!=null)//check if instruction is in pr
+		{
+			result=allocatedRegisters.get(unAllocatedRegister.getVr()).getPr();
+		}
+		else//else get from spilled
+		{
+			result=unSpill(unAllocatedRegister,physicalRegisters.getRegister(unAllocatedRegister.getVr()),allocate(unAllocatedRegister));
+		}
+
+		return result;
+	}
+
+	protected abstract int allocate(Register unAllocatedRegister) throws NoFreeRegisterException;
+
+	protected void unAllocate(Register register)
+	{
+		physicalRegisters.returnFreeRegister(register.getPr());
+		allocatedRegisters.remove(register.getVr());
+		//register.setPr(-1);
+	}
+
+	protected void spill(Register registerToBeSpill, int tempPhysicalRegister)
+	{
+		int spillLocation=getSpillMemoryLocation();
+		spillMap.put(registerToBeSpill.getVr(), spillLocation);
+
+		String s1="loadI "+spillLocation+ " => p"+tempPhysicalRegister;//loadI spillLocation => pr
+		newInstructions.add(s1);
+		String s2="store p"+registerToBeSpill.getPr()+ " => p"+tempPhysicalRegister;//load registerToBeSpill => pr
+		newInstructions.add(s2);
+
+		allocatedRegisters.remove(new Integer(registerToBeSpill.getVr()));
+
+		physicalRegisters.returnFreeRegister(tempPhysicalRegister);
+		//returnFreeRegister(registerToBeSpill.getPr());
+		unAllocate(registerToBeSpill);
+
+		//		System.out.println(s1);
+		//		System.out.println(s2);
+	}
+
+	protected int unSpill(Register registerToUnSpill, int tempPhysicalRegister, int prDestination)
+	{
+		int spillLocation=spillMap.get(registerToUnSpill.getVr());
+
+		String s1="loadI "+spillLocation+ " => p"+tempPhysicalRegister;
+		newInstructions.add(s1);
+		String s2="load p"+tempPhysicalRegister+ " => p"+prDestination;
+		newInstructions.add(s2);
+
+		allocatedRegisters.put(registerToUnSpill.getVr(), registerToUnSpill);
+
+		physicalRegisters.returnFreeRegister(tempPhysicalRegister);
+
+		//		System.out.println(s1);
+		//		System.out.println(s2);
+
+		return prDestination;
+	}
+
+	private int getSpillMemoryLocation()
+	{
+		//TODO if spillCount>1023, reuse spill
+		int result=spillCount;
+		spillCount+=4;
+		return result;
+	}
 }

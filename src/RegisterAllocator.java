@@ -4,12 +4,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import exception.ExtraTokenException;
-import exception.InvalidArrowException;
-import exception.InvalidOpcodeException;
-import exception.InvalidRegisterNameException;
-import exception.UseUndefinedRegisterException;
-
 
 public class RegisterAllocator {
 	
@@ -17,6 +11,7 @@ public class RegisterAllocator {
 	private int numRegister;
 	private String filePath;
 	private ArrayList<Instruction> instructions;
+	private AAllocator allocator;
 	
 	public RegisterAllocator(boolean useTopDown, int numRegister, String filePath)
 	{
@@ -26,49 +21,7 @@ public class RegisterAllocator {
 		this.filePath=filePath;
 	}
 	
-	public String toString()
-	{
-		String s="";
-		s+="File: "+filePath+"\n";
-		
-		if(useTopDown)
-		{
-			s+="Use Top Down Mode\n";
-		}
-		else
-		{
-			s+="Use Buttom Up Mode\n";
-		}
-		
-		s+="Number of Registers: "+numRegister+"\n";
-		
-		s+="Instructions: \n";
-		
-		for(int i=0;i<instructions.size();i++)
-		{
-			s+=instructions.get(i)+"\n";
-		}
-		
-		return s;
-	}
-	
-	public void allocate() throws UseUndefinedRegisterException
-	{
-		AAllocator allocator;
-		if(useTopDown)
-		{
-			allocator=new TopDownAllocator(numRegister,instructions);
-		}
-		else
-		{
-			allocator=new ButtomUpAllocator(numRegister,instructions);
-		}
-		
-		allocator.run();
-		System.out.println(allocator);
-	}
-	
-	public void run()
+	public void readFile()
 	{
 		try
 		{
@@ -113,8 +66,43 @@ public class RegisterAllocator {
 			e.printStackTrace();
 		}
 	}
+	
+	public void allocate() throws UseUndefinedRegisterException, NoFreeRegisterException
+	{
+		if(useTopDown)
+		{
+			allocator=new TopDownAllocator(numRegister,instructions);
+		}
+		else
+		{
+			allocator=new ButtomUpAllocator(numRegister,instructions);
+		}
+		
+		allocator.run();
+	}
+	
+	public String toString()
+	{
+		String s="";
+		s+="File: "+filePath+"\n";
+		
+		if(useTopDown)
+		{
+			s+="Use Top Down Mode\n";
+		}
+		else
+		{
+			s+="Use Buttom Up Mode\n";
+		}
+		
+		s+="Number of Registers: "+numRegister+"\n";
+		
+		s+=allocator;
+		
+		return s;
+	}
 
-	public static void main(String args[]) throws UseUndefinedRegisterException
+	public static void main(String args[]) throws UseUndefinedRegisterException, NoFreeRegisterException
 	{
 		String mode=args[0];
 		boolean useTopDown=false;
@@ -136,10 +124,10 @@ public class RegisterAllocator {
 		
 		String filePath=args[2];
 		
-		RegisterAllocator ra=new RegisterAllocator(useTopDown, numRegisters,filePath);
-		ra.run();
-		ra.allocate();
-		System.out.println(ra);
+		RegisterAllocator registerAllocator=new RegisterAllocator(useTopDown, numRegisters,filePath);
+		registerAllocator.readFile();
+		registerAllocator.allocate();
+		System.out.println(registerAllocator);
 	}
 	
 

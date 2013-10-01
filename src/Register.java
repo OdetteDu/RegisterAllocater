@@ -18,7 +18,8 @@ public class Register {
 	
 	public String toString()
 	{
-		return "(vr:"+getVr()+" pr:"+pr+" nextUse:"+getNextUse()+" lastUse:"+getLastUse()+" define:"+getDefine()+")";
+		//return "(vr:"+getVr()+" pr:"+pr+" nextUse:"+getNextUse()+" lastUse:"+getLastUse()+" define:"+getDefine()+")";
+		return "(vr:"+getVr()+" pr:"+pr+" nu:"+getNextUse()+" lu:"+getLastUse()+" d:"+getDefine()+")";
 	}
 
 	public int getPr() {

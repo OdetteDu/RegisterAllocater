@@ -12,7 +12,7 @@ public class TopDownAllocator extends AAllocator {
 	@Override
 	protected Register getToBeSpilledRegister()
 	{
-		Register lowestFrequency=null;
+		Register lowestFrequency=currentlyUsedRegister;
 		int minFrequency=instructions.size();
 		Iterator<Integer> iter=allocatedRegisters.keySet().iterator();
 		while(iter.hasNext())
@@ -20,6 +20,11 @@ public class TopDownAllocator extends AAllocator {
 			int vr=iter.next();
 			if(useFrequencyCount.get(vr)<minFrequency)
 			{
+				if(currentlyUsedRegister!=null && currentlyUsedRegister.getVr()==allocatedRegisters.get(vr).getVr())
+				{
+					continue;
+				}
+				
 				minFrequency=useFrequencyCount.get(vr);
 				lowestFrequency=allocatedRegisters.get(vr);
 			}

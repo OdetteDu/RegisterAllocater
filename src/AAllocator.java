@@ -36,6 +36,8 @@ public abstract class AAllocator {
 		spillMap=new HashMap<Integer, Integer>();
 		allocatedRegisters=new HashMap<Integer, Register>();
 		newInstructions=new ArrayList<String>();
+		
+		System.out.println(this);
 
 		int numReserveRegisters;
 		if(maxLive<=numPhysicalRegisters)
@@ -84,6 +86,37 @@ public abstract class AAllocator {
 		while(i>=0)
 		{
 			Instruction instruction=instructions.get(i);
+			
+			if(instruction.getTarget()!=null)
+			{
+				Register target=instruction.getTarget();
+
+				rename(target,renameList);
+
+				if(liveRegisters.get(target.getVr())!=null)
+				{
+					int lastUse=liveRegisters.get(target.getVr());
+					target.setLastUse(lastUse);
+					liveRegisters.remove(target.getVr());
+					target.setNextUse(registerUse.get(target.getVr()));
+					registerUse.remove(target.getVr());
+
+				}
+				else
+				{
+					if(definedVr.contains(target.getVr()))
+					{
+						int availableName=getAvailableName();
+						renameList.put(target.getVr(),availableName);
+						target.setVr(availableName);
+					}
+					target.setLastUse(-1);
+					target.setNextUse(-1);
+				}
+
+				definedVr.add(target.getVr());
+				target.setDefine(i);
+			}
 
 			if(instruction.getSource1()!=null)
 			{
@@ -158,37 +191,6 @@ public abstract class AAllocator {
 
 			}
 
-			if(instruction.getTarget()!=null)
-			{
-				Register target=instruction.getTarget();
-
-				rename(target,renameList);
-
-				if(liveRegisters.get(target.getVr())!=null)
-				{
-					int lastUse=liveRegisters.get(target.getVr());
-					target.setLastUse(lastUse);
-					liveRegisters.remove(target.getVr());
-					target.setNextUse(registerUse.get(target.getVr()));
-					registerUse.remove(target.getVr());
-
-				}
-				else
-				{
-					if(definedVr.contains(target.getVr()))
-					{
-						int availableName=getAvailableName();
-						renameList.put(target.getVr(),availableName);
-						target.setVr(availableName);
-					}
-					target.setLastUse(-1);
-					target.setNextUse(-1);
-				}
-
-				definedVr.add(target.getVr());
-				target.setDefine(i);
-			}
-
 			i--;
 		}
 
@@ -209,7 +211,7 @@ public abstract class AAllocator {
 
 		for(int i=0;i<instructions.size();i++)
 		{
-			s+=instructions.get(i);
+			s+=i+": "+instructions.get(i);
 		}
 
 		s+="\n";
@@ -298,7 +300,7 @@ public abstract class AAllocator {
 				}
 			}
 
-			String newInstruction=getNewInstruction(currentInstruction);
+			String newInstruction=getStringFromInstruction(currentInstruction);
 			newInstructions.add(newInstruction);
 			System.out.println(newInstruction+" "+physicalRegisters);
 
@@ -307,14 +309,14 @@ public abstract class AAllocator {
 
 	}
 
-	private String getNewInstruction(Instruction instruction)
+	private String getStringFromInstruction(Instruction instruction)
 	{
 		String opcode=instruction.getOpcode();
 		String result=opcode;
 
 		if(Instruction.isValidOpcodeWithSource1Source2Target(opcode))
 		{
-			result+=" p"+instruction.getSource1().getPr()+", p"+instruction.getSource2().getPr()+" => p"+instruction.getTarget().getPr();
+			result+=" r"+instruction.getSource1().getPr()+", r"+instruction.getSource2().getPr()+" => r"+instruction.getTarget().getPr();
 			//result+="  ";
 			//result+=" r"+instruction.getSource1().getVr()+", r"+instruction.getSource2().getVr()+" => r"+instruction.getTarget().getVr();
 		}
@@ -327,7 +329,7 @@ public abstract class AAllocator {
 		else if(opcode.equals(Instruction.validOpcodeWithTargetImmediateValue))
 		{
 			//loadI
-			result+=" "+instruction.getImmediateValue()+" => p"+instruction.getTarget().getPr();
+			result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getPr();
 			//result+="  ";
 			//result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getVr();
 
@@ -335,14 +337,14 @@ public abstract class AAllocator {
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Source2))
 		{
 			//store
-			result+=" p"+instruction.getSource1().getPr()+" => p"+instruction.getSource2().getPr();
+			result+=" r"+instruction.getSource1().getPr()+" => r"+instruction.getSource2().getPr();
 			//result+="     ";
 			//result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getSource2().getVr();
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Target))
 		{
 			//load
-			result+=" p"+instruction.getSource1().getPr()+" => p"+instruction.getTarget().getPr();
+			result+=" r"+instruction.getSource1().getPr()+" => r"+instruction.getTarget().getPr();
 			//result+="      ";
 			//result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getTarget().getVr();
 		}
@@ -398,9 +400,9 @@ public abstract class AAllocator {
 		int spillLocation=getSpillMemoryLocation();
 		spillMap.put(registerToBeSpill.getVr(), spillLocation);
 
-		String s1="loadI "+spillLocation+ " => p"+tempPhysicalRegister;//loadI spillLocation => pr
+		String s1="loadI "+spillLocation+ " => r"+tempPhysicalRegister;//loadI spillLocation => pr
 		newInstructions.add(s1);
-		String s2="store p"+registerToBeSpill.getPr()+ " => p"+tempPhysicalRegister;//load registerToBeSpill => pr
+		String s2="store r"+registerToBeSpill.getPr()+ " => r"+tempPhysicalRegister;//load registerToBeSpill => pr
 		newInstructions.add(s2);
 
 		physicalRegisters.returnFreeRegister(tempPhysicalRegister);
@@ -417,9 +419,9 @@ public abstract class AAllocator {
 
 		int spillLocation=spillMap.get(registerToUnSpill.getVr());
 
-		String s1="loadI "+spillLocation+ " => p"+prDestination;
+		String s1="loadI "+spillLocation+ " => r"+prDestination;
 		newInstructions.add(s1);
-		String s2="load p"+prDestination+ " => p"+prDestination;
+		String s2="load r"+prDestination+ " => r"+prDestination;
 		newInstructions.add(s2);
 
 		allocatedRegisters.put(registerToUnSpill.getVr(), registerToUnSpill);

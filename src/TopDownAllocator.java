@@ -8,35 +8,24 @@ public class TopDownAllocator extends AAllocator {
 	{
 		super(numPhysicalRegister,instructions);
 	}
-
-	protected int allocate(Register unAllocatedRegister) throws NoFreeRegisterException
+	
+	@Override
+	protected Register getToBeSpilledRegister()
 	{
-		try
+		Register lowestFrequency=null;
+		int minFrequency=instructions.size();
+		Iterator<Integer> iter=allocatedRegisters.keySet().iterator();
+		while(iter.hasNext())
 		{
-			int result=physicalRegisters.getNonReservedRegister(unAllocatedRegister.getVr());
-			return result;
-		}
-		catch(NoNonReservedFreeRegisterException e)
-		{
-
-			Register lowestFrequency=null;
-			int minFrequency=instructions.size();
-			Iterator<Integer> iter=allocatedRegisters.keySet().iterator();
-			while(iter.hasNext())
+			int vr=iter.next();
+			if(useFrequencyCount.get(vr)<minFrequency)
 			{
-				int vr=iter.next();
-				if(useFrequencyCount.get(vr)<minFrequency)
-				{
-					minFrequency=useFrequencyCount.get(vr);
-					lowestFrequency=allocatedRegisters.get(vr);
-				}
-				
+				minFrequency=useFrequencyCount.get(vr);
+				lowestFrequency=allocatedRegisters.get(vr);
 			}
 			
-			spill(lowestFrequency); //should not be vr, should be immediate
-
-			return allocate(unAllocatedRegister);
 		}
+		return lowestFrequency;
 	}
 	
 }

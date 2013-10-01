@@ -8,34 +8,28 @@ public class ButtomUpAllocator extends AAllocator {
 		super(numPhysicalRegister,instructions);
 	}
 
-	protected int allocate(Register unAllocatedRegister) throws NoFreeRegisterException
+	@Override
+	protected Register getToBeSpilledRegister()
 	{
-		try
+		Register registerUsedFar=currentlyUsedRegister;
+		int maxLine=0;
+		Iterator<Integer> iter=allocatedRegisters.keySet().iterator();
+		while(iter.hasNext())
 		{
-			int result=physicalRegisters.getNonReservedRegister(unAllocatedRegister.getVr());
-			return result;
-		}
-		catch(NoNonReservedFreeRegisterException e)
-		{
-
-			Register registerUsedFar=null;
-			int maxLine=0;
-			Iterator<Integer> iter=allocatedRegisters.keySet().iterator();
-			while(iter.hasNext())
+			Register r=allocatedRegisters.get(iter.next());
+			
+			if(currentlyUsedRegister!=null && currentlyUsedRegister.getVr()==r.getVr())
 			{
-				Register r=allocatedRegisters.get(iter.next());
-
-				if(r.getNextUse()>maxLine)
-				{
-					maxLine=r.getNextUse();
-					registerUsedFar=r;
-				}
+				continue;
 			}
-
-			spill(registerUsedFar); //should not be vr, should be immediate
-
-			return allocate(unAllocatedRegister);
+				
+			if(r.getNextUse()>maxLine)
+			{
+				maxLine=r.getNextUse();
+				registerUsedFar=r;
+			}
 		}
-
+		
+		return registerUsedFar;
 	}
 }

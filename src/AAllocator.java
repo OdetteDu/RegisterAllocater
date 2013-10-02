@@ -247,7 +247,6 @@ public abstract class AAllocator {
 		{
 			currentlyUsedRegister=null;
 			ArrayList<Register> toBeFreeList=new ArrayList<Register>();
-
 			Instruction currentInstruction=instructions.get(i);
 
 			if(currentInstruction.getOpcode().equals("loadI"))
@@ -292,10 +291,16 @@ public abstract class AAllocator {
 				}
 			}
 
-			Iterator<Register> iter=toBeFreeList.iterator();
-			while(iter.hasNext())
+//			Iterator<Register> iter=toBeFreeList.iterator();
+//			while(iter.hasNext())
+//			{
+//				Register toBeFreeRegister=iter.next();
+//				unAllocate(toBeFreeRegister);
+//				toBeFreeList.remove(toBeFreeRegister);
+//			}
+			while(!toBeFreeList.isEmpty())
 			{
-				unAllocate(iter.next());
+				unAllocate(toBeFreeList.remove(toBeFreeList.size()-1));
 			}
 
 			if(currentlyUsedRegister!=null)
@@ -315,6 +320,18 @@ public abstract class AAllocator {
 				else
 				{
 					//TODO check if it is arithmetic operation, if yes, output the line and free register
+					if(Instruction.isValidOpcodeWithSource1Source2Target(currentInstruction.getOpcode()))
+					{
+						int prTarget=allocate(currentInstruction.getTarget());
+						currentInstruction.getTarget().setPr(prTarget);
+						allocatedRegisters.put(currentInstruction.getTarget().getVr(),currentInstruction.getTarget());
+						toBeFreeList.add(currentInstruction.getTarget());
+					}
+					else
+					{
+						continue;
+					}
+					
 					try {
 						throw new UnImplementedFeatureException();
 					} catch (UnImplementedFeatureException e) {
@@ -326,6 +343,18 @@ public abstract class AAllocator {
 			String newInstruction=getStringPRFromInstruction(currentInstruction);
 			newInstructions.add(newInstruction);
 			System.out.println(newInstruction+" "+physicalRegisters);
+			
+//			Iterator<Register> iter2=toBeFreeList.iterator();
+//			while(iter2.hasNext())
+//			{
+//				Register toBeFreeRegister=iter.next();
+//				unAllocate(toBeFreeRegister);
+//				toBeFreeList.remove(toBeFreeRegister);
+//			}
+			while(!toBeFreeList.isEmpty())
+			{
+				unAllocate(toBeFreeList.remove(toBeFreeList.size()-1));
+			}
 
 
 		}

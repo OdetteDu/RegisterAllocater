@@ -16,7 +16,7 @@ public abstract class AAllocator {
 	protected PhysicalRegisters physicalRegisters;
 
 	private int spillCount;
-	private HashMap<Integer, Integer> spillMap; //virtual register: memory location
+	protected HashMap<Integer, Integer> spillMap; //virtual register: memory location
 
 	protected HashMap<Integer, Integer> useFrequencyCount; // vr:count
 	protected Register currentlyUsedRegister;
@@ -252,12 +252,17 @@ public abstract class AAllocator {
 
 			if(currentInstruction.getOpcode().equals("loadI"))
 			{
-				Instruction nextInstruction=instructions.get(i+1);
-				if(nextInstruction.getOpcode().equals("load"))
-				{
-					System.out.println("loadI, load pattern recognized");
-					//TODO
-				}
+//				try
+//				{
+//					int memoryLocation=Integer.parseInt(currentInstruction.getImmediateValue());
+//					spillMap.put(currentInstruction.getTarget().getVr(), memoryLocation);
+//				}
+//				catch(NumberFormatException e)
+//				{
+//					System.out.println("The instruction "
+//							+getStringVRFromInstruction(currentInstruction)
+//							+" contains an immediate value which is not an integer. ");
+//				}
 			}
 
 			if(currentInstruction.getSource1()!=null)
@@ -292,7 +297,11 @@ public abstract class AAllocator {
 				unAllocate(iter.next());
 			}
 
-			currentlyUsedRegister=null;
+			if(currentlyUsedRegister!=null)
+			{
+				currentInstruction.setSource1(currentlyUsedRegister);
+				currentlyUsedRegister=null;
+			}
 
 			if(currentInstruction.getTarget()!=null)
 			{
@@ -412,14 +421,37 @@ public abstract class AAllocator {
 		}
 		catch(NoNonReservedFreeRegisterException e)
 		{
-			spill(getToBeSpilledRegister()); //should not be vr, should be immediate
+			try 
+			{
+				spill(getToBeSpilledRegister());
+			} 
+			catch (NoUnusedRegisterToSpillException ex) 
+			{
+				ex.printStackTrace();
+				if(currentlyUsedRegister!=null)
+				{
+					try 
+					{
+						spill(currentlyUsedRegister);
+						int result=physicalRegisters.getNonReservedRegister(unAllocatedRegister.getVr());
+						int newPhysicalRegister=physicalRegisters.getRegister(currentlyUsedRegister.getVr());
+						unSpill(currentlyUsedRegister, newPhysicalRegister);
+						currentlyUsedRegister.setPr(newPhysicalRegister);
+						return result;
+					} 
+					catch (NoNonReservedFreeRegisterException e1) 
+					{
+						throw new NoFreeRegisterException();
+					}
+				}
+			} 
 
 			return allocate(unAllocatedRegister);
 		}
 
 	}
 
-	protected abstract Register getToBeSpilledRegister();
+	protected abstract Register getToBeSpilledRegister() throws NoUnusedRegisterToSpillException;
 
 	protected void unAllocate(Register register)
 	{
@@ -453,13 +485,30 @@ public abstract class AAllocator {
 		}
 		
 		unAllocate(registerToBeSpill);
-		allocatedRegisters.remove(new Integer(registerToBeSpill.getVr()));
+		//allocatedRegisters.remove(new Integer(registerToBeSpill.getVr()));
 	}
 
 	protected int unSpill(Register registerToUnSpill) throws NoFreeRegisterException
 	{
-		int prDestination=allocate(registerToUnSpill);
+//		int prDestination=allocate(registerToUnSpill);
+//
+//		int spillLocation=spillMap.get(registerToUnSpill.getVr());
+//
+//		String s1="loadI "+spillLocation+ " => r"+prDestination;
+//		newInstructions.add(s1);
+//		String s2="load r"+prDestination+ " => r"+prDestination;
+//		newInstructions.add(s2);
+//
+//		allocatedRegisters.put(registerToUnSpill.getVr(), registerToUnSpill);
+//
+//		System.out.println(s1+"   Address in v"+prDestination);
+//		System.out.println(s2+"   UnSpill v"+registerToUnSpill.getVr());
 
+		return unSpill(registerToUnSpill, allocate(registerToUnSpill));
+	}
+	
+	protected int unSpill(Register registerToUnSpill, int prDestination) throws NoFreeRegisterException
+	{
 		int spillLocation=spillMap.get(registerToUnSpill.getVr());
 
 		String s1="loadI "+spillLocation+ " => r"+prDestination;

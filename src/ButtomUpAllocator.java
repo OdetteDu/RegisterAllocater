@@ -9,9 +9,9 @@ public class ButtomUpAllocator extends AAllocator {
 	}
 
 	@Override
-	protected Register getToBeSpilledRegister()
+	protected Register getToBeSpilledRegister() throws NoUnusedRegisterToSpillException
 	{
-		Register registerUsedFar=currentlyUsedRegister;
+		Register registerUsedFar=null;
 		int maxLine=0;
 		Iterator<Integer> iter=allocatedRegisters.keySet().iterator();
 		while(iter.hasNext())
@@ -23,11 +23,28 @@ public class ButtomUpAllocator extends AAllocator {
 				continue;
 			}
 				
-			if(r.getNextUse()>maxLine)
+			if(r.getNextUse()>=maxLine)
 			{
-				maxLine=r.getNextUse();
-				registerUsedFar=r;
+				if(r.getNextUse()==maxLine)
+				{
+					if(spillMap.get(registerUsedFar.getVr())==null)
+					{
+						registerUsedFar=r;
+					}
+				}
+				else
+				{
+					maxLine=r.getNextUse();
+					registerUsedFar=r;
+				}
 			}
+		}
+		
+		if(registerUsedFar==null)
+		{
+//			registerUsedFar=currentlyUsedRegister;
+//			System.out.println("Warning: use currently used register.\n");
+			throw new NoUnusedRegisterToSpillException();
 		}
 		
 		return registerUsedFar;

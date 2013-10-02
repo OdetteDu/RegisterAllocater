@@ -62,7 +62,13 @@ public class PhysicalRegisters {
 		return getRegister(PhysicalRegisters.IMMEDIATE_VALUE_MARK);
 	}
 	
-	private int getRegister(int virtualRegisterNumber) throws NoFreeRegisterException
+	/**
+	 * Dangerous! Not encourage to use
+	 * @param virtualRegisterNumber
+	 * @return
+	 * @throws NoFreeRegisterException
+	 */
+	public int getRegister(int virtualRegisterNumber) throws NoFreeRegisterException
 	{
 		if(!freeRegisters.isEmpty())
 		{

@@ -119,11 +119,8 @@ public class RegisterAllocator {
 			}
 
 			int numRegisters=Integer.parseInt(args[1]);
-
 			String filePath=args[2];
-
 			RegisterAllocator registerAllocator=new RegisterAllocator(useTopDown, numRegisters,filePath);
-			
 			System.out.println(registerAllocator.run());
 		}
 		catch(Exception e)

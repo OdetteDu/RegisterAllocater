@@ -13,15 +13,15 @@ public abstract class AAllocator {
 	protected HashMap<Integer, Integer> spillMap; //virtual register: memory location
 	protected HashMap<Integer, Integer> useFrequencyCount; // vr:count
 	protected Register currentlyUsedRegister;
-	
+
 	private SpillLocationGenerator spillLocationGenerator;
 
 	public AAllocator(int numPhysicalRegisters, ArrayList<Instruction> instructions) throws UseUndefinedRegisterException 
 	{
 		spillLocationGenerator=new SpillLocationGenerator();
-		
+
 		renameCount=-2;
-		
+
 		useFrequencyCount=new HashMap<Integer, Integer>();
 
 
@@ -47,6 +47,9 @@ public abstract class AAllocator {
 			//reserve
 			numReserveRegisters=2;
 		}
+
+		System.out.println("MaxLive is: "+maxLive);
+		System.out.println("Number of Reserved Register is: "+numReserveRegisters);
 
 		physicalRegisters=new PhysicalRegisters(numPhysicalRegisters, numReserveRegisters);
 	}
@@ -141,10 +144,10 @@ public abstract class AAllocator {
 					}
 					source1.setLastUse(i);
 					liveRegisters.put(source1.getVr(), i);
-//					if(liveRegisters.size()>maxLive)
-//					{
-//						maxLive=liveRegisters.size();
-//					}
+					//					if(liveRegisters.size()>maxLive)
+					//					{
+					//						maxLive=liveRegisters.size();
+					//					}
 					source1.setNextUse(i);
 					registerUse.put(source1.getVr(), i);
 					useFrequencyCount.put(source1.getVr(), 1);
@@ -177,10 +180,10 @@ public abstract class AAllocator {
 					}
 					source2.setLastUse(i);
 					liveRegisters.put(source2.getVr(), i);
-//					if(liveRegisters.size()>maxLive)
-//					{
-//						maxLive=liveRegisters.size();
-//					}
+					//					if(liveRegisters.size()>maxLive)
+					//					{
+					//						maxLive=liveRegisters.size();
+					//					}
 					source2.setNextUse(i);
 					registerUse.put(source2.getVr(), i);
 					useFrequencyCount.put(source2.getVr(), 1);
@@ -199,16 +202,16 @@ public abstract class AAllocator {
 		}
 
 		//return maxLive;
-		
+
 	}
 
 	private int calculateMaxLive()
 	{
-//		System.out.println("Start to calculate max live");
-		
+		//		System.out.println("Start to calculate max live");
+
 		int maxLive=0;
 		ArrayList<Integer> liveRegisters=new ArrayList<Integer>();
-		
+
 		for(int i=0;i<instructions.size();i++)
 		{
 			Instruction currentInstruction=instructions.get(i);
@@ -236,24 +239,24 @@ public abstract class AAllocator {
 				Register target=currentInstruction.getTarget();
 				liveRegisters.add(new Integer(target.getVr()));
 			}
-			
-//			System.out.print(i+": ");
-//			for(int j=0;j<liveRegisters.size();j++)
-//			{
-//				System.out.print(liveRegisters.get(j)+" ");
-//			}
-//			System.out.println();
-			
+
+			//			System.out.print(i+": ");
+			//			for(int j=0;j<liveRegisters.size();j++)
+			//			{
+			//				System.out.print(liveRegisters.get(j)+" ");
+			//			}
+			//			System.out.println();
+
 			if(maxLive<liveRegisters.size())
 			{
 				maxLive=liveRegisters.size();
 			}
-//			System.out.println("MaxLive="+maxLive);
+			//			System.out.println("MaxLive="+maxLive);
 		}
-		
+
 		return maxLive;
 	}
-	
+
 	@Override
 	public String toString()
 	{
@@ -295,17 +298,17 @@ public abstract class AAllocator {
 
 			if(currentInstruction.getOpcode().equals("loadI"))
 			{
-//				try
-//				{
-//					int memoryLocation=Integer.parseInt(currentInstruction.getImmediateValue());
-//					spillMap.put(currentInstruction.getTarget().getVr(), memoryLocation);
-//				}
-//				catch(NumberFormatException e)
-//				{
-//					System.out.println("The instruction "
-//							+getStringVRFromInstruction(currentInstruction)
-//							+" contains an immediate value which is not an integer. ");
-//				}
+				//				try
+				//				{
+				//					int memoryLocation=Integer.parseInt(currentInstruction.getImmediateValue());
+				//					spillMap.put(currentInstruction.getTarget().getVr(), memoryLocation);
+				//				}
+				//				catch(NumberFormatException e)
+				//				{
+				//					System.out.println("The instruction "
+				//							+getStringVRFromInstruction(currentInstruction)
+				//							+" contains an immediate value which is not an integer. ");
+				//				}
 			}
 
 			if(currentInstruction.getSource1()!=null)
@@ -318,20 +321,28 @@ public abstract class AAllocator {
 				{
 					//unAllocate(in.getSource1());
 					toBeFreeList.add(currentInstruction.getSource1());
-					
+
 				}
 
 			}
 
 			if(currentInstruction.getSource2()!=null)
 			{
-				int prSource2=ensure(currentInstruction.getSource2());
-				currentInstruction.getSource2().setPr(prSource2);
-
-				if(currentInstruction.getSource2().getLastUse()<=i)
+				if(currentInstruction.getSource1().getVr()==currentInstruction.getSource2().getVr())
 				{
-					//unAllocate(in.getSource2());
-					toBeFreeList.add(currentInstruction.getSource2());
+					int prSource2=currentInstruction.getSource1().getPr();
+					currentInstruction.getSource2().setPr(prSource2);
+				}
+				else
+				{
+					int prSource2=ensure(currentInstruction.getSource2());
+					currentInstruction.getSource2().setPr(prSource2);
+
+					if(currentInstruction.getSource2().getLastUse()<=i)
+					{
+						//unAllocate(in.getSource2());
+						toBeFreeList.add(currentInstruction.getSource2());
+					}
 				}
 			}
 
@@ -519,7 +530,7 @@ public abstract class AAllocator {
 		{
 			int spillLocation=spillLocationGenerator.getSpillMemoryLocation();
 			spillMap.put(registerToBeSpill.getVr(), spillLocation);
-			
+
 			int tempPhysicalRegister=physicalRegisters.getReservedRegister();
 
 			String s1="loadI "+spillLocation+ " => r"+tempPhysicalRegister;//loadI spillLocation => pr
@@ -528,15 +539,15 @@ public abstract class AAllocator {
 			newInstructions.add(s2);
 
 			physicalRegisters.returnFreeRegister(tempPhysicalRegister);
-			
-//			System.out.println(s1+"   Address in v"+tempPhysicalRegister);
-//			System.out.println(s2+"   Spill v"+registerToBeSpill.getVr());
+
+			//			System.out.println(s1+"   Address in v"+tempPhysicalRegister);
+			//			System.out.println(s2+"   Spill v"+registerToBeSpill.getVr());
 		}
 		else
 		{
-//			System.out.println("r"+registerToBeSpill.getVr()+" is already in memory. No spill necessary. Free p"+registerToBeSpill.getPr());
+			//			System.out.println("r"+registerToBeSpill.getVr()+" is already in memory. No spill necessary. Free p"+registerToBeSpill.getPr());
 		}
-		
+
 		unAllocate(registerToBeSpill);
 	}
 
@@ -544,7 +555,7 @@ public abstract class AAllocator {
 	{
 		return unSpill(registerToUnSpill, allocate(registerToUnSpill));
 	}
-	
+
 	protected int unSpill(Register registerToUnSpill, int prDestination) throws NoFreeRegisterException
 	{
 		int spillLocation=spillMap.get(registerToUnSpill.getVr());
@@ -556,8 +567,8 @@ public abstract class AAllocator {
 
 		allocatedRegisters.put(registerToUnSpill.getVr(), registerToUnSpill);
 
-//		System.out.println(s1+"   Address in v"+prDestination);
-//		System.out.println(s2+"   UnSpill v"+registerToUnSpill.getVr());
+		//		System.out.println(s1+"   Address in v"+prDestination);
+		//		System.out.println(s2+"   UnSpill v"+registerToUnSpill.getVr());
 
 		return prDestination;
 	}

@@ -42,6 +42,7 @@ public class RegisterAllocator {
 
 				temp=br.readLine();
 			}
+			br.close();
 		} 
 		catch (FileNotFoundException e) 
 		{

@@ -10,26 +10,35 @@ public class TopDownAllocator extends AAllocator {
 	}
 	
 	@Override
-	protected Register getToBeSpilledRegister()
+	protected Register getToBeSpilledRegister() throws NoUnusedRegisterToSpillException
 	{
-		Register lowestFrequency=currentlyUsedRegister;
+		Register lowestFrequency=null;
 		int minFrequency=instructions.size();
 		Iterator<Integer> iter=allocatedRegisters.keySet().iterator();
+		
 		while(iter.hasNext())
 		{
-			int vr=iter.next();
-			if(useFrequencyCount.get(vr)<minFrequency)
+			int virtualRegisterNumber=iter.next();
+			Register registerToCompare=allocatedRegisters.get(virtualRegisterNumber);
+			
+			if(currentlyUsedRegister!=null && currentlyUsedRegister.getVr()==registerToCompare.getVr())
 			{
-				if(currentlyUsedRegister!=null && currentlyUsedRegister.getVr()==allocatedRegisters.get(vr).getVr())
-				{
-					continue;
-				}
-				
-				minFrequency=useFrequencyCount.get(vr);
-				lowestFrequency=allocatedRegisters.get(vr);
+				continue;
+			}
+			
+			if(useFrequencyCount.get(virtualRegisterNumber)<minFrequency)
+			{
+				minFrequency=useFrequencyCount.get(virtualRegisterNumber);
+				lowestFrequency=registerToCompare;
 			}
 			
 		}
+		
+		if(lowestFrequency==null)
+		{
+			throw new NoUnusedRegisterToSpillException();
+		}
+		
 		return lowestFrequency;
 	}
 	

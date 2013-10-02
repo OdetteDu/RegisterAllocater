@@ -67,7 +67,7 @@ public class RegisterAllocator {
 		}
 	}
 	
-	public void allocate() throws UseUndefinedRegisterException, NoFreeRegisterException
+	public void allocate() throws UseUndefinedRegisterException, NoFreeRegisterException, NoEnoughMemoryToSpillException
 	{
 		if(useTopDown)
 		{
@@ -102,7 +102,7 @@ public class RegisterAllocator {
 		return s;
 	}
 
-	public static void main(String args[]) throws UseUndefinedRegisterException, NoFreeRegisterException, ImmediateValueNotIntegerException
+	public static void main(String args[]) throws UseUndefinedRegisterException, NoFreeRegisterException, ImmediateValueNotIntegerException, NoEnoughMemoryToSpillException
 	{
 		String mode=args[0];
 		boolean useTopDown=false;

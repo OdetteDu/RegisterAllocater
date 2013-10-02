@@ -41,7 +41,7 @@ public class Parser {
 			}
 			catch(NumberFormatException e)
 			{
-				throw new ImmediateValueNotIntegerException();
+				throw new ImmediateValueNotIntegerException(line.get(1));
 			}
 			
 			
@@ -65,7 +65,7 @@ public class Parser {
 			}
 			catch(NumberFormatException e)
 			{
-				throw new ImmediateValueNotIntegerException();
+				throw new ImmediateValueNotIntegerException(line.get(1));
 			}
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Source2))
@@ -98,7 +98,7 @@ public class Parser {
 		}
 		else
 		{
-			throw new InvalidOpcodeException();
+			throw new InvalidOpcodeException(opcode);
 		}
 		
 		return instruction;
@@ -108,7 +108,7 @@ public class Parser {
 	{
 		if(registerName.charAt(0)!='r')
 		{
-			throw new InvalidRegisterNameException();
+			throw new InvalidRegisterNameException(registerName);
 		}
 		
 		try
@@ -118,7 +118,7 @@ public class Parser {
 		}
 		catch(NumberFormatException e)
 		{
-			throw new InvalidRegisterNameException();
+			throw new InvalidRegisterNameException(registerName);
 		}
 	}
 	
@@ -126,7 +126,7 @@ public class Parser {
 	{
 		if(!s.equals("=>"))
 		{
-			throw new InvalidArrowException();
+			throw new InvalidArrowException(s);
 		}
 	}
 }

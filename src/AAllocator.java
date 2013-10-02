@@ -201,7 +201,13 @@ public abstract class AAllocator {
 
 		if(!liveRegisters.isEmpty())
 		{
-			throw new UseUndefinedRegisterException();
+			String exceptionMessage="";
+			Iterator<Integer> iter=liveRegisters.keySet().iterator();
+			while(iter.hasNext())
+			{
+				exceptionMessage+="r"+iter.next()+" ";
+			}
+			throw new UseUndefinedRegisterException(exceptionMessage);
 		}
 
 		//return maxLive;

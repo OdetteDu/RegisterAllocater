@@ -36,7 +36,7 @@ public abstract class AAllocator {
 		spillMap=new HashMap<Integer, Integer>();
 		allocatedRegisters=new HashMap<Integer, Register>();
 		newInstructions=new ArrayList<String>();
-		
+
 		System.out.println(this);
 
 		int numReserveRegisters;
@@ -86,7 +86,7 @@ public abstract class AAllocator {
 		while(i>=0)
 		{
 			Instruction instruction=instructions.get(i);
-			
+
 			if(instruction.getTarget()!=null)
 			{
 				Register target=instruction.getTarget();
@@ -216,6 +216,14 @@ public abstract class AAllocator {
 
 		s+="\n";
 
+		s+="Renamed VR: ";
+		for (int i=0;i<instructions.size();i++)
+		{
+			s+=this.getStringVRFromInstruction(instructions.get(i))+"\n";
+		}
+
+		s+="\n";
+
 		for (int i=0;i<newInstructions.size();i++)
 		{
 			s+=newInstructions.get(i)+"\n";
@@ -277,13 +285,13 @@ public abstract class AAllocator {
 					toBeFreeList.add(currentInstruction.getSource2());
 				}
 			}
-			
+
 			Iterator<Register> iter=toBeFreeList.iterator();
 			while(iter.hasNext())
 			{
 				unAllocate(iter.next());
 			}
-			
+
 			currentlyUsedRegister=null;
 
 			if(currentInstruction.getTarget()!=null)
@@ -300,16 +308,16 @@ public abstract class AAllocator {
 				}
 			}
 
-			String newInstruction=getStringFromInstruction(currentInstruction);
+			String newInstruction=getStringPRFromInstruction(currentInstruction);
 			newInstructions.add(newInstruction);
 			System.out.println(newInstruction+" "+physicalRegisters);
 
-			
+
 		}
 
 	}
 
-	private String getStringFromInstruction(Instruction instruction)
+	private String getStringPRFromInstruction(Instruction instruction)
 	{
 		String opcode=instruction.getOpcode();
 		String result=opcode;
@@ -317,8 +325,6 @@ public abstract class AAllocator {
 		if(Instruction.isValidOpcodeWithSource1Source2Target(opcode))
 		{
 			result+=" r"+instruction.getSource1().getPr()+", r"+instruction.getSource2().getPr()+" => r"+instruction.getTarget().getPr();
-			//result+="  ";
-			//result+=" r"+instruction.getSource1().getVr()+", r"+instruction.getSource2().getVr()+" => r"+instruction.getTarget().getVr();
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithImmediateValue))
 		{
@@ -330,23 +336,52 @@ public abstract class AAllocator {
 		{
 			//loadI
 			result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getPr();
-			//result+="  ";
-			//result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getVr();
 
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Source2))
 		{
 			//store
 			result+=" r"+instruction.getSource1().getPr()+" => r"+instruction.getSource2().getPr();
-			//result+="     ";
-			//result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getSource2().getVr();
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Target))
 		{
 			//load
 			result+=" r"+instruction.getSource1().getPr()+" => r"+instruction.getTarget().getPr();
-			//result+="      ";
-			//result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getTarget().getVr();
+		}
+
+		return result;
+	}
+
+	private String getStringVRFromInstruction(Instruction instruction)
+	{
+		String opcode=instruction.getOpcode();
+		String result=opcode;
+
+		if(Instruction.isValidOpcodeWithSource1Source2Target(opcode))
+		{
+			result+=" r"+instruction.getSource1().getVr()+", r"+instruction.getSource2().getVr()+" => r"+instruction.getTarget().getVr();
+		}
+		else if(opcode.equals(Instruction.validOpcodeWithImmediateValue))
+		{
+			//output
+			result+=" "+instruction.getImmediateValue();
+
+		}
+		else if(opcode.equals(Instruction.validOpcodeWithTargetImmediateValue))
+		{
+			//loadI
+			result+=" "+instruction.getImmediateValue()+" => r"+instruction.getTarget().getVr();
+
+		}
+		else if(opcode.equals(Instruction.validOpcodeWithSource1Source2))
+		{
+			//store
+			result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getSource2().getVr();
+		}
+		else if(opcode.equals(Instruction.validOpcodeWithSource1Target))
+		{
+			//load
+			result+=" r"+instruction.getSource1().getVr()+" => r"+instruction.getTarget().getVr();
 		}
 
 		return result;
@@ -383,7 +418,7 @@ public abstract class AAllocator {
 		}
 
 	}
-	
+
 	protected abstract Register getToBeSpilledRegister();
 
 	protected void unAllocate(Register register)
@@ -395,22 +430,30 @@ public abstract class AAllocator {
 
 	protected void spill(Register registerToBeSpill) throws NoFreeRegisterException
 	{
-		int tempPhysicalRegister=physicalRegisters.getReservedRegister();
+		if(spillMap.get(registerToBeSpill.getVr())==null)
+		{
+			int spillLocation=getSpillMemoryLocation();
+			spillMap.put(registerToBeSpill.getVr(), spillLocation);
+			
+			int tempPhysicalRegister=physicalRegisters.getReservedRegister();
 
-		int spillLocation=getSpillMemoryLocation();
-		spillMap.put(registerToBeSpill.getVr(), spillLocation);
+			String s1="loadI "+spillLocation+ " => r"+tempPhysicalRegister;//loadI spillLocation => pr
+			newInstructions.add(s1);
+			String s2="store r"+registerToBeSpill.getPr()+ " => r"+tempPhysicalRegister;//load registerToBeSpill => pr
+			newInstructions.add(s2);
 
-		String s1="loadI "+spillLocation+ " => r"+tempPhysicalRegister;//loadI spillLocation => pr
-		newInstructions.add(s1);
-		String s2="store r"+registerToBeSpill.getPr()+ " => r"+tempPhysicalRegister;//load registerToBeSpill => pr
-		newInstructions.add(s2);
-
-		physicalRegisters.returnFreeRegister(tempPhysicalRegister);
+			physicalRegisters.returnFreeRegister(tempPhysicalRegister);
+			
+			System.out.println(s1+"   Address in v"+tempPhysicalRegister);
+			System.out.println(s2+"   Spill v"+registerToBeSpill.getVr());
+		}
+		else
+		{
+			System.out.println("r"+registerToBeSpill.getVr()+" is already in memory. No spill necessary. Free p"+registerToBeSpill.getPr());
+		}
+		
 		unAllocate(registerToBeSpill);
 		allocatedRegisters.remove(new Integer(registerToBeSpill.getVr()));
-
-		System.out.println(s1+"   Address in v"+tempPhysicalRegister);
-		System.out.println(s2+"   Spill v"+registerToBeSpill.getVr());
 	}
 
 	protected int unSpill(Register registerToUnSpill) throws NoFreeRegisterException

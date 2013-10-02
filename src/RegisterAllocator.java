@@ -21,7 +21,7 @@ public class RegisterAllocator {
 		this.filePath=filePath;
 	}
 	
-	public void readFile()
+	public void readFile() throws ImmediateValueNotIntegerException
 	{
 		try
 		{
@@ -102,7 +102,7 @@ public class RegisterAllocator {
 		return s;
 	}
 
-	public static void main(String args[]) throws UseUndefinedRegisterException, NoFreeRegisterException
+	public static void main(String args[]) throws UseUndefinedRegisterException, NoFreeRegisterException, ImmediateValueNotIntegerException
 	{
 		String mode=args[0];
 		boolean useTopDown=false;

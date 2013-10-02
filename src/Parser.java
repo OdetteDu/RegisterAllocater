@@ -3,7 +3,7 @@ import java.util.ArrayList;
 
 public class Parser {
 
-	public Instruction parseLine(ArrayList<String> line) throws InvalidOpcodeException, InvalidRegisterNameException, InvalidArrowException, ExtraTokenException
+	public Instruction parseLine(ArrayList<String> line) throws InvalidOpcodeException, InvalidRegisterNameException, InvalidArrowException, ExtraTokenException, ImmediateValueNotIntegerException
 	{
 		Instruction instruction;
 		
@@ -33,7 +33,16 @@ public class Parser {
 				throw new ExtraTokenException();
 			}
 			instruction=new Instruction(opcode);
-			instruction.setImmediateValue(line.get(1));
+			
+			try
+			{
+				int iv=Integer.parseInt(line.get(1));
+				instruction.setImmediateValue(iv);
+			}
+			catch(NumberFormatException e)
+			{
+				throw new ImmediateValueNotIntegerException();
+			}
 			
 			
 		}
@@ -48,7 +57,16 @@ public class Parser {
 			checkArrow(line.get(2));
 			instruction=new Instruction(opcode);
 			instruction.setTarget(target);
-			instruction.setImmediateValue(line.get(1));
+	
+			try
+			{
+				int iv=Integer.parseInt(line.get(1));
+				instruction.setImmediateValue(iv);
+			}
+			catch(NumberFormatException e)
+			{
+				throw new ImmediateValueNotIntegerException();
+			}
 		}
 		else if(opcode.equals(Instruction.validOpcodeWithSource1Source2))
 		{

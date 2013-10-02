@@ -13,7 +13,7 @@ public class Instruction {
 	private String opcode;
 	private Register source1, source2;
 	private Register target;
-	private String immediateValue;
+	private int immediateValue;
 	
 	public Instruction(String opcode)
 	{
@@ -74,10 +74,10 @@ public class Instruction {
 	public void setTarget(Register target) {
 		this.target = target;
 	}
-	public String getImmediateValue() {
+	public int getImmediateValue() {
 		return immediateValue;
 	}
-	public void setImmediateValue(String immediateValue) {
+	public void setImmediateValue(int immediateValue) {
 		this.immediateValue = immediateValue;
 	}
 	

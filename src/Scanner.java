@@ -17,7 +17,6 @@ public class Scanner {
 					tokens.add(temp);
 					temp="";
 				}
-				
 			}
 			else if(c=='/' && line.charAt(i+1)=='/')
 			{
@@ -28,9 +27,10 @@ public class Scanner {
 				if(temp.length()!=0)
 				{
 					tokens.add(temp);
+					temp="";
 				}
 				tokens.add("=>");
-				i+=2;
+				i++;
 			}
 			else
 			{

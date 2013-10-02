@@ -53,7 +53,7 @@ public class RegisterAllocator {
 		} 
 	}
 
-	public void allocate() throws UseUndefinedRegisterException, NoFreeRegisterException, NoEnoughMemoryToSpillException
+	public String allocate() throws UseUndefinedRegisterException, NoFreeRegisterException, NoEnoughMemoryToSpillException
 	{
 		if(useTopDown)
 		{
@@ -64,7 +64,7 @@ public class RegisterAllocator {
 			allocator=new ButtomUpAllocator(numRegister,instructions);
 		}
 
-		allocator.run();
+		return allocator.getOutput();
 	}
 
 	public String toString()
@@ -88,10 +88,10 @@ public class RegisterAllocator {
 		return s;
 	}
 
-	public void run() throws ImmediateValueNotIntegerException, UseUndefinedRegisterException, NoFreeRegisterException, NoEnoughMemoryToSpillException, InvalidOpcodeException, InvalidRegisterNameException, InvalidArrowException, ExtraTokenException, InvalidCommandLineArgumentException
+	public String run() throws ImmediateValueNotIntegerException, UseUndefinedRegisterException, NoFreeRegisterException, NoEnoughMemoryToSpillException, InvalidOpcodeException, InvalidRegisterNameException, InvalidArrowException, ExtraTokenException, InvalidCommandLineArgumentException
 	{
 		readFile();
-		allocate();
+		return allocate();
 	}
 
 	public static void main(String args[])
@@ -123,8 +123,8 @@ public class RegisterAllocator {
 			String filePath=args[2];
 
 			RegisterAllocator registerAllocator=new RegisterAllocator(useTopDown, numRegisters,filePath);
-			registerAllocator.run();
-			System.out.println(registerAllocator);
+			
+			System.out.println(registerAllocator.run());
 		}
 		catch(Exception e)
 		{

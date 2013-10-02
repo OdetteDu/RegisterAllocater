@@ -43,8 +43,6 @@ public class ButtomUpAllocator extends AAllocator {
 		
 		if(registerUsedFar==null)
 		{
-//			registerUsedFar=currentlyUsedRegister;
-//			System.out.println("Warning: use currently used register.\n");
 			throw new NoUnusedRegisterToSpillException();
 		}
 		

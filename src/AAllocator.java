@@ -37,8 +37,6 @@ public abstract class AAllocator {
 		constantMap=new HashMap<Integer, Integer>();
 		newInstructions=new ArrayList<String>();
 
-		//System.out.println(this);
-
 		int numReserveRegisters;
 		if(maxLive<=numPhysicalRegisters)
 		{
@@ -51,15 +49,22 @@ public abstract class AAllocator {
 			numReserveRegisters=2;
 		}
 
-		System.out.println("MaxLive is: "+maxLive);
-		System.out.println("Number of Reserved Register is: "+numReserveRegisters);
+//		System.out.println("MaxLive is: "+maxLive);
+//		System.out.println("Number of Reserved Register is: "+numReserveRegisters);
 
 		physicalRegisters=new PhysicalRegisters(numPhysicalRegisters, numReserveRegisters);
 	}
 
-	public void run() throws NoFreeRegisterException, NoEnoughMemoryToSpillException 
+	public String getOutput() throws NoFreeRegisterException, NoEnoughMemoryToSpillException 
 	{
 		allocateRegister();
+		
+		String s="";
+		for (int i=0;i<newInstructions.size();i++)
+		{
+			s+=newInstructions.get(i)+"\n";
+		}
+		return s;
 	}
 
 	private int getAvailableName()
@@ -79,7 +84,6 @@ public abstract class AAllocator {
 
 	private void calculateLiveRange() throws UseUndefinedRegisterException
 	{
-		//int maxLive=0;
 		HashMap<Integer, Integer> liveRegisters=new HashMap<Integer,Integer>();
 		ArrayList<Integer> definedVr=new ArrayList<Integer>();
 		HashMap<Integer, Integer> renameList=new HashMap<Integer,Integer>();
@@ -147,10 +151,6 @@ public abstract class AAllocator {
 					}
 					source1.setLastUse(i);
 					liveRegisters.put(source1.getVr(), i);
-					//					if(liveRegisters.size()>maxLive)
-					//					{
-					//						maxLive=liveRegisters.size();
-					//					}
 					source1.setNextUse(i);
 					registerUse.put(source1.getVr(), i);
 					useFrequencyCount.put(source1.getVr(), 1);
@@ -183,10 +183,6 @@ public abstract class AAllocator {
 					}
 					source2.setLastUse(i);
 					liveRegisters.put(source2.getVr(), i);
-					//					if(liveRegisters.size()>maxLive)
-					//					{
-					//						maxLive=liveRegisters.size();
-					//					}
 					source2.setNextUse(i);
 					registerUse.put(source2.getVr(), i);
 					useFrequencyCount.put(source2.getVr(), 1);
@@ -196,8 +192,6 @@ public abstract class AAllocator {
 
 			i--;
 		}
-
-		//System.out.println("MaxLive is "+maxLive);
 
 		if(!liveRegisters.isEmpty())
 		{
@@ -209,15 +203,10 @@ public abstract class AAllocator {
 			}
 			throw new UseUndefinedRegisterException(exceptionMessage);
 		}
-
-		//return maxLive;
-
 	}
 
 	private int calculateMaxLive()
 	{
-		//		System.out.println("Start to calculate max live");
-
 		int maxLive=0;
 		ArrayList<Integer> liveRegisters=new ArrayList<Integer>();
 
@@ -249,18 +238,10 @@ public abstract class AAllocator {
 				liveRegisters.add(new Integer(target.getVr()));
 			}
 
-			//			System.out.print(i+": ");
-			//			for(int j=0;j<liveRegisters.size();j++)
-			//			{
-			//				System.out.print(liveRegisters.get(j)+" ");
-			//			}
-			//			System.out.println();
-
 			if(maxLive<liveRegisters.size())
 			{
 				maxLive=liveRegisters.size();
 			}
-			//			System.out.println("MaxLive="+maxLive);
 		}
 
 		return maxLive;
@@ -269,7 +250,9 @@ public abstract class AAllocator {
 	@Override
 	public String toString()
 	{
-		String s="Parsed Instructions: \n";
+		String s="";
+		
+		s+="Parsed Instructions: \n";
 
 		for(int i=0;i<instructions.size();i++)
 		{
@@ -330,7 +313,6 @@ public abstract class AAllocator {
 
 				if(currentInstruction.getSource1().getLastUse()<=i)
 				{
-					//unAllocate(in.getSource1());
 					toBeFreeList.add(currentInstruction.getSource1());
 
 				}
@@ -351,7 +333,6 @@ public abstract class AAllocator {
 
 					if(currentInstruction.getSource2().getLastUse()<=i)
 					{
-						//unAllocate(in.getSource2());
 						toBeFreeList.add(currentInstruction.getSource2());
 					}
 				}
@@ -378,7 +359,6 @@ public abstract class AAllocator {
 				}
 				else
 				{
-					//TODO check if it is arithmetic operation, if yes, output the line and free register
 					if(Instruction.isValidOpcodeWithSource1Source2Target(currentInstruction.getOpcode()))
 					{
 						int prTarget=allocate(currentInstruction.getTarget());
@@ -395,7 +375,7 @@ public abstract class AAllocator {
 
 			String newInstruction=getStringPRFromInstruction(currentInstruction);
 			newInstructions.add(newInstruction);
-			System.out.println(newInstruction+physicalRegisters);
+			//System.out.println(newInstruction+physicalRegisters);
 
 			while(!toBeFreeList.isEmpty())
 			{
@@ -404,7 +384,7 @@ public abstract class AAllocator {
 		}
 	}
 
-	private String getStringPRFromInstruction(Instruction instruction)
+	public String getStringPRFromInstruction(Instruction instruction)
 	{
 		String opcode=instruction.getOpcode();
 		String result=opcode;
@@ -439,7 +419,7 @@ public abstract class AAllocator {
 		return result;
 	}
 
-	private String getStringVRFromInstruction(Instruction instruction)
+	public String getStringVRFromInstruction(Instruction instruction)
 	{
 		String opcode=instruction.getOpcode();
 		String result=opcode;
@@ -576,11 +556,11 @@ public abstract class AAllocator {
 	{
 		if(constantMap.get(registerToBeSpill.getVr())!=null)
 		{
-			System.out.println("r"+registerToBeSpill.getVr()+" is in constant map. No spill necessary. Free p"+registerToBeSpill.getPr());
+//			System.out.println("r"+registerToBeSpill.getVr()+" is in constant map. No spill necessary. Free p"+registerToBeSpill.getPr());
 		}
 		else if(spillMap.get(registerToBeSpill.getVr())!=null)
 		{
-			System.out.println("r"+registerToBeSpill.getVr()+" is in spill map. No spill necessary. Free p"+registerToBeSpill.getPr());
+//			System.out.println("r"+registerToBeSpill.getVr()+" is in spill map. No spill necessary. Free p"+registerToBeSpill.getPr());
 		}
 		else
 		{
@@ -615,7 +595,7 @@ public abstract class AAllocator {
 			int constantLocation=constantMap.get(registerToUnSpill.getVr());
 			String s1="loadI "+constantLocation+ " => r"+prDestination;
 			newInstructions.add(s1);
-			System.out.println(s1+"   UnSpill v"+registerToUnSpill.getVr()+" in "+prDestination);
+//			System.out.println(s1+"   UnSpill v"+registerToUnSpill.getVr()+" in "+prDestination);
 		}
 		else
 		{

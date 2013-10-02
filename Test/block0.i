@@ -1,5 +1,5 @@
-loadI 1028 => r1
-load r1 => r2
+loadI 1028=> r1
+load r1 =>r2
 mult r1,r2 => r3
 loadI 1032 => r4
 sub r4,r2 => r5

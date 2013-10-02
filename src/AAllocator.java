@@ -27,13 +27,14 @@ public abstract class AAllocator {
 
 		this.instructions=instructions;
 
-		int maxLive=calculateLiveRange();
+		calculateLiveRange();
+		int maxLive=calculateMaxLive();
 
 		spillMap=new HashMap<Integer, Integer>();
 		allocatedRegisters=new HashMap<Integer, Register>();
 		newInstructions=new ArrayList<String>();
 
-		System.out.println(this);//TODO remove this after use
+		//System.out.println(this);
 
 		int numReserveRegisters;
 		if(maxLive<=numPhysicalRegisters)
@@ -70,9 +71,9 @@ public abstract class AAllocator {
 		}
 	}
 
-	private int calculateLiveRange() throws UseUndefinedRegisterException
+	private void calculateLiveRange() throws UseUndefinedRegisterException
 	{
-		int maxLive=0;
+		//int maxLive=0;
 		HashMap<Integer, Integer> liveRegisters=new HashMap<Integer,Integer>();
 		ArrayList<Integer> definedVr=new ArrayList<Integer>();
 		HashMap<Integer, Integer> renameList=new HashMap<Integer,Integer>();
@@ -140,10 +141,10 @@ public abstract class AAllocator {
 					}
 					source1.setLastUse(i);
 					liveRegisters.put(source1.getVr(), i);
-					if(liveRegisters.size()>maxLive)
-					{
-						maxLive=liveRegisters.size();
-					}
+//					if(liveRegisters.size()>maxLive)
+//					{
+//						maxLive=liveRegisters.size();
+//					}
 					source1.setNextUse(i);
 					registerUse.put(source1.getVr(), i);
 					useFrequencyCount.put(source1.getVr(), 1);
@@ -176,10 +177,10 @@ public abstract class AAllocator {
 					}
 					source2.setLastUse(i);
 					liveRegisters.put(source2.getVr(), i);
-					if(liveRegisters.size()>maxLive)
-					{
-						maxLive=liveRegisters.size();
-					}
+//					if(liveRegisters.size()>maxLive)
+//					{
+//						maxLive=liveRegisters.size();
+//					}
 					source2.setNextUse(i);
 					registerUse.put(source2.getVr(), i);
 					useFrequencyCount.put(source2.getVr(), 1);
@@ -190,16 +191,69 @@ public abstract class AAllocator {
 			i--;
 		}
 
-		System.out.println("MaxLive is "+maxLive);
+		//System.out.println("MaxLive is "+maxLive);
 
 		if(!liveRegisters.isEmpty())
 		{
 			throw new UseUndefinedRegisterException();
 		}
 
-		return maxLive;
+		//return maxLive;
+		
 	}
 
+	private int calculateMaxLive()
+	{
+//		System.out.println("Start to calculate max live");
+		
+		int maxLive=0;
+		ArrayList<Integer> liveRegisters=new ArrayList<Integer>();
+		
+		for(int i=0;i<instructions.size();i++)
+		{
+			Instruction currentInstruction=instructions.get(i);
+
+			if(currentInstruction.getSource1()!=null)
+			{
+				Register source1=currentInstruction.getSource1();
+				if(source1.getLastUse()==i)
+				{
+					liveRegisters.remove(new Integer(source1.getVr()));
+				}
+			}
+
+			if(currentInstruction.getSource2()!=null)
+			{
+				Register source2=currentInstruction.getSource2();
+				if(source2.getLastUse()==i)
+				{
+					liveRegisters.remove(new Integer(source2.getVr()));
+				}
+			}
+
+			if(currentInstruction.getTarget()!=null)
+			{
+				Register target=currentInstruction.getTarget();
+				liveRegisters.add(new Integer(target.getVr()));
+			}
+			
+//			System.out.print(i+": ");
+//			for(int j=0;j<liveRegisters.size();j++)
+//			{
+//				System.out.print(liveRegisters.get(j)+" ");
+//			}
+//			System.out.println();
+			
+			if(maxLive<liveRegisters.size())
+			{
+				maxLive=liveRegisters.size();
+			}
+//			System.out.println("MaxLive="+maxLive);
+		}
+		
+		return maxLive;
+	}
+	
 	@Override
 	public String toString()
 	{

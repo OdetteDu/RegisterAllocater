@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 
 public abstract class AAllocator {
 
@@ -12,6 +13,7 @@ public abstract class AAllocator {
 
 	protected HashMap<Integer, Integer> spillMap; //virtual register: memory location
 	protected HashMap<Integer, Integer> useFrequencyCount; // vr:count
+	private HashMap<Integer, Integer> constantMap; //virtual register: immediateValue
 	protected Register currentlyUsedRegister;
 
 	private SpillLocationGenerator spillLocationGenerator;
@@ -32,6 +34,7 @@ public abstract class AAllocator {
 
 		spillMap=new HashMap<Integer, Integer>();
 		allocatedRegisters=new HashMap<Integer, Register>();
+		constantMap=new HashMap<Integer, Integer>();
 		newInstructions=new ArrayList<String>();
 
 		//System.out.println(this);
@@ -285,6 +288,15 @@ public abstract class AAllocator {
 
 		s+="\n";
 
+		s+="Constant Map: \n";
+		Iterator<Integer> iter=constantMap.keySet().iterator();
+		while(iter.hasNext())
+		{
+			Integer key=iter.next();
+			s+="v"+key+": "+constantMap.get(key)+"\n";
+		}
+		s+="\n";
+
 		return s;
 	}
 
@@ -298,17 +310,10 @@ public abstract class AAllocator {
 
 			if(currentInstruction.getOpcode().equals("loadI"))
 			{
-				//				try
-				//				{
-				//					int memoryLocation=Integer.parseInt(currentInstruction.getImmediateValue());
-				//					spillMap.put(currentInstruction.getTarget().getVr(), memoryLocation);
-				//				}
-				//				catch(NumberFormatException e)
-				//				{
-				//					System.out.println("The instruction "
-				//							+getStringVRFromInstruction(currentInstruction)
-				//							+" contains an immediate value which is not an integer. ");
-				//				}
+
+				int immediateValue=currentInstruction.getImmediateValue();
+				constantMap.put(currentInstruction.getTarget().getVr(),immediateValue);
+
 			}
 
 			if(currentInstruction.getSource1()!=null)
@@ -526,7 +531,7 @@ public abstract class AAllocator {
 
 	protected void spill(Register registerToBeSpill) throws NoFreeRegisterException, NoEnoughMemoryToSpillException
 	{
-		if(spillMap.get(registerToBeSpill.getVr())==null)
+		if(spillMap.get(registerToBeSpill.getVr())==null || constantMap.get(registerToBeSpill.getVr())==null)
 		{
 			int spillLocation=spillLocationGenerator.getSpillMemoryLocation();
 			spillMap.put(registerToBeSpill.getVr(), spillLocation);
@@ -545,7 +550,7 @@ public abstract class AAllocator {
 		}
 		else
 		{
-			//			System.out.println("r"+registerToBeSpill.getVr()+" is already in memory. No spill necessary. Free p"+registerToBeSpill.getPr());
+			System.out.println("r"+registerToBeSpill.getVr()+" is in constant map. No spill necessary. Free p"+registerToBeSpill.getPr());
 		}
 
 		unAllocate(registerToBeSpill);
@@ -558,18 +563,29 @@ public abstract class AAllocator {
 
 	protected int unSpill(Register registerToUnSpill, int prDestination) throws NoFreeRegisterException
 	{
-		int spillLocation=spillMap.get(registerToUnSpill.getVr());
 
-		String s1="loadI "+spillLocation+ " => r"+prDestination;
-		newInstructions.add(s1);
-		String s2="load r"+prDestination+ " => r"+prDestination;
-		newInstructions.add(s2);
 
-		allocatedRegisters.put(registerToUnSpill.getVr(), registerToUnSpill);
+		if(constantMap.get(registerToUnSpill.getVr())!=null)
+		{
+			int constantLocation=constantMap.get(registerToUnSpill.getVr());
+			String s1="loadI "+constantLocation+ " => r"+prDestination;
+			newInstructions.add(s1);
+		}
+		else
+		{
+			int spillLocation=spillMap.get(registerToUnSpill.getVr());
 
-		//		System.out.println(s1+"   Address in v"+prDestination);
-		//		System.out.println(s2+"   UnSpill v"+registerToUnSpill.getVr());
+			String s1="loadI "+spillLocation+ " => r"+prDestination;
+			newInstructions.add(s1);
+			String s2="load r"+prDestination+ " => r"+prDestination;
+			newInstructions.add(s2);
+		}
+			allocatedRegisters.put(registerToUnSpill.getVr(), registerToUnSpill);
 
-		return prDestination;
+			//		System.out.println(s1+"   Address in v"+prDestination);
+			//		System.out.println(s2+"   UnSpill v"+registerToUnSpill.getVr());
+
+			return prDestination;
+		
 	}
 }

@@ -27,7 +27,8 @@ public class ButtomUpAllocator extends AAllocator {
 			{
 				if(r.getNextUse()==maxLine)
 				{
-					if(spillMap.get(registerUsedFar.getVr())==null)
+					boolean shouldSwitch=breakTie(registerUsedFar,r);
+					if(shouldSwitch)
 					{
 						registerUsedFar=r;
 					}

@@ -26,10 +26,22 @@ public class TopDownAllocator extends AAllocator {
 				continue;
 			}
 			
-			if(useFrequencyCount.get(virtualRegisterNumber)<minFrequency)
+			if(useFrequencyCount.get(virtualRegisterNumber)<=minFrequency)
 			{
-				minFrequency=useFrequencyCount.get(virtualRegisterNumber);
-				lowestFrequency=registerToCompare;
+				if(useFrequencyCount.get(virtualRegisterNumber)==minFrequency)
+				{
+					boolean shouldSwitch=breakTie(lowestFrequency,registerToCompare);
+					if(shouldSwitch)
+					{
+						lowestFrequency=registerToCompare;
+					}
+				}
+				else
+				{
+					minFrequency=useFrequencyCount.get(virtualRegisterNumber);
+					lowestFrequency=registerToCompare;
+				}
+				
 			}
 			
 		}

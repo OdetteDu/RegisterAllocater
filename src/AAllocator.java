@@ -13,7 +13,7 @@ public abstract class AAllocator {
 
 	protected HashMap<Integer, Integer> spillMap; //virtual register: memory location
 	protected HashMap<Integer, Integer> useFrequencyCount; // vr:count
-	private HashMap<Integer, Integer> constantMap; //virtual register: immediateValue
+	protected HashMap<Integer, Integer> constantMap; //virtual register: immediateValue
 	protected Register currentlyUsedRegister;
 
 	private SpillLocationGenerator spillLocationGenerator;
@@ -395,6 +395,7 @@ public abstract class AAllocator {
 
 			String newInstruction=getStringPRFromInstruction(currentInstruction);
 			newInstructions.add(newInstruction);
+			System.out.println(newInstruction+physicalRegisters);
 
 			while(!toBeFreeList.isEmpty())
 			{
@@ -534,10 +535,54 @@ public abstract class AAllocator {
 		physicalRegisters.returnFreeRegister(register.getPr());
 		allocatedRegisters.remove(register.getVr());
 	}
+	
+	/**
+	 * 
+	 * @param a
+	 * @param b
+	 * @return false if should use A
+	 *         true  if should use B
+	 */
+	protected boolean breakTie(Register a,Register b)
+	{
+		int vrA=a.getVr();
+		int vrB=b.getVr();
+		if(constantMap.containsKey(vrA) && (!constantMap.containsKey(vrB)))
+		{
+			return false;
+		}
+		else if(constantMap.containsKey(vrB) && (!constantMap.containsKey(vrA)))
+		{
+			return true;
+		}
+		else
+		{
+			if(spillMap.containsKey(vrA) && (!spillMap.containsKey(vrB)))
+			{
+				return false;
+			}
+			else if(spillMap.containsKey(vrB) && (!spillMap.containsKey(vrA)))
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+	}
 
 	protected void spill(Register registerToBeSpill) throws NoFreeRegisterException, NoEnoughMemoryToSpillException
 	{
-		if(spillMap.get(registerToBeSpill.getVr())==null || constantMap.get(registerToBeSpill.getVr())==null)
+		if(constantMap.get(registerToBeSpill.getVr())!=null)
+		{
+			System.out.println("r"+registerToBeSpill.getVr()+" is in constant map. No spill necessary. Free p"+registerToBeSpill.getPr());
+		}
+		else if(spillMap.get(registerToBeSpill.getVr())!=null)
+		{
+			System.out.println("r"+registerToBeSpill.getVr()+" is in spill map. No spill necessary. Free p"+registerToBeSpill.getPr());
+		}
+		else
 		{
 			int spillLocation=spillLocationGenerator.getSpillMemoryLocation();
 			spillMap.put(registerToBeSpill.getVr(), spillLocation);
@@ -554,10 +599,6 @@ public abstract class AAllocator {
 			//			System.out.println(s1+"   Address in v"+tempPhysicalRegister);
 			//			System.out.println(s2+"   Spill v"+registerToBeSpill.getVr());
 		}
-		else
-		{
-			System.out.println("r"+registerToBeSpill.getVr()+" is in constant map. No spill necessary. Free p"+registerToBeSpill.getPr());
-		}
 
 		unAllocate(registerToBeSpill);
 	}
@@ -569,13 +610,12 @@ public abstract class AAllocator {
 
 	protected int unSpill(Register registerToUnSpill, int prDestination) throws NoFreeRegisterException
 	{
-
-
 		if(constantMap.get(registerToUnSpill.getVr())!=null)
 		{
 			int constantLocation=constantMap.get(registerToUnSpill.getVr());
 			String s1="loadI "+constantLocation+ " => r"+prDestination;
 			newInstructions.add(s1);
+			System.out.println(s1+"   UnSpill v"+registerToUnSpill.getVr()+" in "+prDestination);
 		}
 		else
 		{

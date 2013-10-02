@@ -4,6 +4,7 @@
 /ImmediateValueNotIntegerException.class
 /Instruction.class
 /InvalidArrowException.class
+/InvalidCommandLineArgumentException.class
 /InvalidOpcodeException.class
 /InvalidRegisterNameException.class
 /NoEnoughMemoryToSpillException.class
@@ -19,5 +20,3 @@
 /TopDownAllocator.class
 /UnImplementedFeatureException.class
 /UseUndefinedRegisterException.class
-/InvalidArgumentException.class
-/InvalidCommandLineArgumentException.class

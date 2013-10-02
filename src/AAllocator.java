@@ -269,12 +269,13 @@ public abstract class AAllocator {
 			{
 				int prSource1=ensure(currentInstruction.getSource1());
 				currentInstruction.getSource1().setPr(prSource1);
+				currentlyUsedRegister=currentInstruction.getSource1();
 
 				if(currentInstruction.getSource1().getLastUse()<=i)
 				{
 					//unAllocate(in.getSource1());
 					toBeFreeList.add(currentInstruction.getSource1());
-					currentlyUsedRegister=currentInstruction.getSource1();
+					
 				}
 
 			}
@@ -314,6 +315,11 @@ public abstract class AAllocator {
 				else
 				{
 					//TODO check if it is arithmetic operation, if yes, output the line and free register
+					try {
+						throw new UnImplementedFeatureException();
+					} catch (UnImplementedFeatureException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 
@@ -527,6 +533,15 @@ public abstract class AAllocator {
 	private int getSpillMemoryLocation()
 	{
 		//TODO if spillCount>1023, reuse spill
+		if(spillCount>1023)
+		{
+			try {
+				throw new UnImplementedFeatureException();
+			} catch (UnImplementedFeatureException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		int result=spillCount;
 		spillCount+=4;
 		return result;
